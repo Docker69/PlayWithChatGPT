@@ -1,4 +1,4 @@
-module playwithchatgpt
+module PlayWithChatGPT
 
 go 1.20
 
