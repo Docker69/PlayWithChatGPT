@@ -5,9 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"strings"
+
+	mylogger "backend/utils"
 
 	"github.com/sashabaranov/go-openai"
 )
@@ -17,7 +18,6 @@ const quitStr = "!quit"
 
 // StartChat starts an infinite loop that will keep asking for user input until !quit command is entered
 func StartChat(apiKey string) {
-	log.SetOutput(os.Stderr)
 
 	//declare messages
 	messages := make([]openai.ChatCompletionMessage, 0)
@@ -75,7 +75,7 @@ func StartChat(apiKey string) {
 		)
 
 		if err != nil {
-			log.Printf("ChatCompletion error: %v\n", err)
+			mylogger.Logger.Errorf("ChatCompletion error: %v\n", err)
 			continue
 		}
 
@@ -91,13 +91,13 @@ func StartChat(apiKey string) {
 		// print the generated response to console
 		fmt.Println(content)
 
-		log.Printf("Model: %s", resp.Model)
+		mylogger.Logger.Debugf("Model: %s", resp.Model)
 
 		jsonStr, _ := json.Marshal(messages)
-		log.Printf("Messages: \n%s", jsonStr)
+		mylogger.Logger.Debugf("Messages: %s", jsonStr)
 
 		jsonStr, _ = json.Marshal(resp.Usage)
-		log.Printf("Tokens: \n%s", jsonStr)
+		mylogger.Logger.Debugf("Tokens: %s", jsonStr)
 	}
 	reader.Reset(os.Stdin)
 }
