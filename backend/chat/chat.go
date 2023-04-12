@@ -10,15 +10,19 @@ import (
 
 	mylogger "backend/utils"
 
+	"github.com/google/uuid"
 	"github.com/sashabaranov/go-openai"
+	"github.com/sirupsen/logrus"
 )
 
 // set quit command string
 const quitStr = "!quit"
 
-// StartChat starts an infinite loop that will keep asking for user input until !quit command is entered
-func StartChat(apiKey string) {
+// StartConsoleChat starts an infinite loop that will keep asking for user input until !quit command is entered
+func StartConsoleChat(apiKey string) {
 
+	u := uuid.New()
+	mylogger.Logger.WithField("UUID", u).Info("New chat started!")
 	//declare messages
 	messages := make([]openai.ChatCompletionMessage, 0)
 
@@ -37,6 +41,12 @@ func StartChat(apiKey string) {
 		Role:    openai.ChatMessageRoleSystem,
 		Content: text,
 	})
+
+	mylogger.Logger.WithFields(
+		logrus.Fields{
+			"role": text,
+			"UUID": u,
+		}).Info("Setting ChatGPT role")
 
 	fmt.Println("Conversation")
 	fmt.Println("---------------------")
@@ -75,7 +85,7 @@ func StartChat(apiKey string) {
 		)
 
 		if err != nil {
-			mylogger.Logger.Errorf("ChatCompletion error: %v\n", err)
+			mylogger.Logger.WithField("UUID", u).Errorf("ChatCompletion error: %v\n", err)
 			continue
 		}
 
@@ -91,13 +101,14 @@ func StartChat(apiKey string) {
 		// print the generated response to console
 		fmt.Println(content)
 
-		mylogger.Logger.Debugf("Model: %s", resp.Model)
+		mylogger.Logger.WithField("UUID", u).Debugf("Model: %s", resp.Model)
 
 		jsonStr, _ := json.Marshal(messages)
-		mylogger.Logger.Debugf("Messages: %s", jsonStr)
+		mylogger.Logger.WithField("UUID", u).Debugf("Messages: %s", jsonStr)
 
 		jsonStr, _ = json.Marshal(resp.Usage)
-		mylogger.Logger.Debugf("Tokens: %s", jsonStr)
+		mylogger.Logger.WithField("UUID", u).Debugf("Tokens: %s", jsonStr)
 	}
 	reader.Reset(os.Stdin)
+	mylogger.Logger.WithField("UUID", u).Info("Chat Ended!")
 }

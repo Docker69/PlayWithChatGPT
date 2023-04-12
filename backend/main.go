@@ -42,5 +42,5 @@ func main() {
 	}
 
 	// start the chat
-	chat.StartChat(apiKey)
+	chat.StartConsoleChat(apiKey)
 }
