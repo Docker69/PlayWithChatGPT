@@ -102,8 +102,13 @@ func main() {
 		// print the generated response to console
 		fmt.Println(content)
 
+		log.Printf("Model: %s", resp.Model)
+
 		jsonStr, _ := json.Marshal(messages)
-		log.Printf("Messages: %s", jsonStr)
+		log.Printf("Messages: \n%s", jsonStr)
+
+		jsonStr, _ = json.Marshal(resp.Usage)
+		log.Printf("Tokens: \n%s", jsonStr)
 	}
 	reader.Reset(os.Stdin)
 }
