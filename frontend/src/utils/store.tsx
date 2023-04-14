@@ -1,23 +1,10 @@
 import React, { createContext, useReducer, ReactNode } from "react";
-
-type ChatSession = {
-  id: string;
-  messages: string[];
-};
-
-type StateType = {
-  chatSessions: ChatSession[];
-};
-
-type ActionType =
-  | { type: "NEW_CHAT_SESSION"; payload: ChatSession }
-  | { type: "NEW_CHAT_PROMPT"; payload: ChatSession }
-  // Add action send prompt here
-  
-  ;
+import { ActionType, NEW_CHAT_SESSION, SEND_CHAT_PROMPT, StateType } from "./storeConstants";
+import { sendChatPrompt } from "../api/chatAPI";
 
 const initialState: StateType = {
   chatSessions: [],
+  chatPrompt: {id: "", prompt: ""},
 };
 
 const store = createContext<{ state: StateType, dispatch: React.Dispatch<ActionType> }>({
@@ -29,12 +16,18 @@ const StateProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(
     (state: StateType, action: ActionType) => {
       switch (action.type) {
-        case "NEW_CHAT_SESSION":
+        case NEW_CHAT_SESSION:
           {
-            console.info('Adding new chat session: ', action.payload)
+            console.info('Adding new chat session: ', action.payload);
             return { ...state, chatSessions: [...state.chatSessions, action.payload] };
           }
-        // Handle additional action types here
+          case SEND_CHAT_PROMPT:
+            {
+              console.info('Send prompt: ', action.payload);
+              sendChatPrompt(action.payload);
+              return { ...state, chatPrompt: {id: "", prompt: ""} };
+            }
+          // Handle additional action types here
         default:
           return state;
       }

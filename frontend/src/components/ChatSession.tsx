@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useContext, useState } from "react";
 import { IconButton, Box, Container, TextField } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
-
+import { store } from '../utils/store';
+import { SEND_CHAT_PROMPT } from '../utils/storeConstants';
 type ChatSessionProps = {};
 
 const MessageBubble = ({
@@ -56,6 +57,23 @@ const ChatSession: React.FC<ChatSessionProps> = () => {
     },
   ];
 
+  const [prompt, setPrompt] = useState('');
+  const { dispatch } = useContext(store);
+
+  const handleSendClick = () => {
+  
+    //event.preventDefault();
+    // handle adding new chat Session
+    dispatch({
+        type: SEND_CHAT_PROMPT, 
+        payload: {id: "", prompt: prompt}
+      });
+  
+    console.debug('Prompt sent');
+    setPrompt('');
+  };
+
+
   return (
     <Container
       maxWidth="sm"
@@ -72,8 +90,15 @@ const ChatSession: React.FC<ChatSessionProps> = () => {
           variant="outlined"
           placeholder="Type your message..."
           style={{ flex: 1, marginRight: "10px" }}
+          value={prompt}
+          onChange={(event) => setPrompt(event.target.value)}
         />
-        <IconButton color="primary" aria-label="Send" size="large">
+        <IconButton 
+          color="primary" 
+          aria-label="Send" 
+          size="large"
+          onClick={() => handleSendClick()}
+        >
           <SendIcon />
         </IconButton>
       </Box>

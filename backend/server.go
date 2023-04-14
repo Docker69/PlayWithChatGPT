@@ -3,6 +3,7 @@ package main
 import (
 	mylogger "backend/utils"
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -14,6 +15,12 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/sirupsen/logrus"
 )
+
+type RequestBody struct {
+	Id       string   `json:"id"`
+	Role     string   `json:"role"`
+	Messages []string `json:"messages"`
+}
 
 // run server function
 func runServer() {
@@ -31,7 +38,8 @@ func runServer() {
 			mylogger.Logger.WithFields(logrus.Fields{
 				"uri":    values.URI,
 				"status": values.Status,
-			}).Info("Request logged")
+				"method": values.Method,
+			}).Info("Incoming request logged")
 
 			return nil
 		},
@@ -107,8 +115,46 @@ func runServer() {
 		})
 	})
 
+	// Init Chat API endpoint
+	router.POST("/api/init", func(c echo.Context) error {
+
+		// log a message using logrus logger
+		mylogger.Logger.Info("Received chat init request")
+
+		// get request body
+		var reqBody RequestBody
+
+		if err := c.Bind(&reqBody); err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]string{
+				"error": "invalid request body",
+			})
+		}
+
+		// generate a random uuid
+		reqBody.Id = uuid.New().String()
+
+		// return reqBody as json
+		return c.JSON(http.StatusOK, reqBody)
+
+	})
+
+	//handle CORS
+	router.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"*"},
+		AllowMethods: []string{http.MethodGet, http.MethodPut, http.MethodPost, http.MethodDelete},
+	}))
+
+	//get port from env
+	port, exists := os.LookupEnv("LISTEN_PORT")
+
+	if !exists {
+		mylogger.Logger.Warn("LISTEN_PORT not defined in env, using default port 8080")
+		port = "8080"
+	}
+
+	// Start server
 	server := &http.Server{
-		Addr:    ":8080",
+		Addr:    fmt.Sprintf(":%s", port),
 		Handler: router,
 	}
 
