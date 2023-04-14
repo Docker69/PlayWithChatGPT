@@ -8,11 +8,15 @@ import (
 	"backend/chat"
 	mylogger "backend/utils"
 
+	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 )
 
 // main function of the application
 func main() {
+	// get command line arguments
+	args := os.Args
+
 	// load the environment variables
 	err := godotenv.Load()
 	if err != nil {
@@ -41,6 +45,22 @@ func main() {
 		mylogger.Logger.Panic("OpenAI API Key not found, panicking!!!")
 	}
 
-	// start the chat
-	chat.StartConsoleChat(apiKey)
+	var frontend bool = false
+	// check command line arguments and compare them
+	for _, arg := range args {
+		if arg == "frontend" {
+			frontend = true
+		}
+	}
+
+	if frontend {
+		//start the server
+		runServer()
+	} else {
+		//generate a random uuid
+		uuid := uuid.New().String()
+
+		// start chat via console
+		chat.StartConsoleChat(apiKey, uuid)
+	}
 }
