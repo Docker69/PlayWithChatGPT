@@ -1,7 +1,8 @@
 import { ChatPrompt, ChatSession } from "../utils/storeConstants";
 
 const config = {
-    serverPort: 3001
+    //serverAddr: 'http://localhost:3000',
+    serverAddr: '',
   };
   
 export async function initChat(payload: ChatSession) {
@@ -10,7 +11,7 @@ export async function initChat(payload: ChatSession) {
 
     // Initialize the chat session with the backend server
     try {
-        const response = await fetch(`http://localhost:${config.serverPort}/api/init`, {
+        const response = await fetch(`${config.serverAddr}/api/init`, {
             method: 'POST',
             body: JSON.stringify(payload),
             headers: {

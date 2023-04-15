@@ -3,6 +3,9 @@
 package mylogger
 
 import (
+	"io"
+	"os"
+
 	"github.com/sirupsen/logrus"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
@@ -20,12 +23,13 @@ func init() {
 
 	// Create a new instance of Lumberjack for log rotation
 	rotateFileHook := &lumberjack.Logger{
-		Filename:   "backend.log",
+		Filename:   "server.log",
 		MaxSize:    50, // Max size in megabytes before rotation occurs
 		MaxBackups: 30, // Max number of old log files to keep
 		MaxAge:     2,  // Max number of days to retain log files before deletion
 		LocalTime:  true,
 	}
-	// Set the output of the logger to the file
-	Logger.Out = rotateFileHook
+	multi := io.MultiWriter(rotateFileHook, os.Stdout)
+	// Set the output of the logger to the file and stdout
+	Logger.SetOutput(multi)
 }

@@ -1,0 +1,22 @@
+version: '3'
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    networks: 
+      - api-network
+  web:
+    build: ./frontend
+    ports:
+      - "80:80"
+    networks: 
+      - web-network
+      - api-network
+    depends_on:
+      - api
+networks:
+  api-network:
+  web-network:
