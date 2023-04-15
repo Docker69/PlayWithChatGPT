@@ -10,20 +10,16 @@ import (
 	"syscall"
 	"time"
 
+	"backend/chat"
+
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/sirupsen/logrus"
 )
 
-type RequestBody struct {
-	Id       string   `json:"id"`
-	Role     string   `json:"role"`
-	Messages []string `json:"messages"`
-}
-
 // run server function
-func runServer() {
+func runServer(apiKey string) {
 	// create http server using Echo framework
 	router := echo.New()
 
@@ -122,7 +118,7 @@ func runServer() {
 		mylogger.Logger.Info("Received chat init request")
 
 		// get request body
-		var reqBody RequestBody
+		reqBody := chat.ChatCompletionRequestBody{}
 
 		if err := c.Bind(&reqBody); err != nil {
 			return c.JSON(http.StatusBadRequest, map[string]string{
@@ -132,6 +128,37 @@ func runServer() {
 
 		// generate a random uuid
 		reqBody.Id = uuid.New().String()
+
+		// return reqBody as json
+		return c.JSON(http.StatusOK, reqBody)
+
+	})
+
+	// Init Chat API endpoint
+	router.POST("/api/send-completion", func(c echo.Context) error {
+
+		// log a message using logrus logger
+		mylogger.Logger.Info("Received chat completion request")
+
+		// get request body
+		reqBody := chat.ChatCompletionRequestBody{}
+
+		if err := c.Bind(&reqBody); err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]string{
+				"error": "invalid request body",
+			})
+		}
+
+		//Call the chat completion function and get the response, handle error
+		resp, err := chat.ChatCompletion(apiKey, reqBody)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]string{
+				"error": err.Error(),
+			})
+		}
+
+		//spread request body and replace Message with response
+		reqBody.Messages = resp
 
 		// return reqBody as json
 		return c.JSON(http.StatusOK, reqBody)

@@ -46,9 +46,9 @@ const ChatSessions: React.FC<ChatSessionsProps> = () => {
     console.info("Requesting to start new chat session");
     const payload = { id: "", role: newRole, messages: [] };
     //wait for initChat to return before dispatching
-    initChat(payload).then((response) => {
-      console.info("Response from initChat: ", response);
-      response.id !== "" &&
+    initChat(payload).then(({success, response}) => {
+      console.info("Response from initChat: ", {success, response});
+      success &&
         dispatch({ type: NEW_CHAT_SESSION, payload: response });
     });
 

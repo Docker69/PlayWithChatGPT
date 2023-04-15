@@ -1,17 +1,18 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { IconButton, Box, Container, TextField } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
-import { store } from '../utils/store';
-import { SEND_CHAT_PROMPT } from '../utils/storeConstants';
+import { store } from "../utils/store";
+import { SEND_CHAT_PROMPT, USER_ROLE } from "../utils/storeConstants";
+import { sendChatPrompt } from "../api/chatAPI";
 type ChatSessionProps = {};
 
 const MessageBubble = ({
-  author,
-  message,
+  role,
+  content,
   mine,
 }: {
-  author: string;
-  message: string;
+  role: string;
+  content: string;
   mine: boolean;
 }) => (
   <Box
@@ -30,13 +31,14 @@ const MessageBubble = ({
         textAlign: mine ? "right" : "left",
       }}
     >
-      {author}
+      {role}
     </p>
-    <p style={{ fontSize: "14px", margin: "0" }}>{message}</p>
+    <p style={{ fontSize: "14px", margin: "0" }}>{content}</p>
   </Box>
 );
 
 const ChatSession: React.FC<ChatSessionProps> = () => {
+/*
   const messages = [
     { author: "John Doe", message: "Hello!", mine: false },
     { author: "Jane Smith", message: "Hi, how are you?", mine: true },
@@ -56,23 +58,32 @@ const ChatSession: React.FC<ChatSessionProps> = () => {
       mine: false,
     },
   ];
-
-  const [prompt, setPrompt] = useState('');
-  const { dispatch } = useContext(store);
+*/
+  const [prompt, setPrompt] = useState("");
+  const { state, dispatch } = useContext(store);
 
   const handleSendClick = () => {
-  
     //event.preventDefault();
-    // handle adding new chat Session
-    dispatch({
-        type: SEND_CHAT_PROMPT, 
-        payload: {id: "", prompt: prompt}
-      });
-  
-    console.debug('Prompt sent');
-    setPrompt('');
+    //use chat api to send prompt to backend
+    console.info("Requesting to send prompt to backend");
+
+    const updatedMessages = [...state.activeChatSession.messages, {role: USER_ROLE, content: prompt}];
+    const payload = {...state.activeChatSession, messages: updatedMessages };
+
+    //wait for sendChatPrompt to return before dispatching
+    sendChatPrompt(payload).then(({success, response}) => {
+      console.info("Response from sendChatPrompt: ", {success, response});
+      success &&
+        dispatch({ type: SEND_CHAT_PROMPT, payload: response });
+    });
+
+    setPrompt("");
   };
 
+  //use effect to update state when active chat session changes or new message is sent
+  useEffect(() => {
+    console.log("ChatSession useEffect: ", state.activeChatSession.messages);
+  }, [state.activeChatSession.messages]);
 
   return (
     <Container
@@ -80,8 +91,8 @@ const ChatSession: React.FC<ChatSessionProps> = () => {
       style={{ height: "100%", display: "flex", flexDirection: "column" }}
     >
       <Box sx={{ flex: "1", overflowY: "auto", p: "20px" }}>
-        {messages.map((message, index) => (
-          <MessageBubble key={index} {...message} />
+        {state.activeChatSession.messages.map((message, index) => (
+          <MessageBubble key={index} {...message} mine={message.role === USER_ROLE ? true : false} />
         ))}
       </Box>
       <Box display="flex" p="20px">
@@ -93,11 +104,12 @@ const ChatSession: React.FC<ChatSessionProps> = () => {
           value={prompt}
           onChange={(event) => setPrompt(event.target.value)}
         />
-        <IconButton 
-          color="primary" 
-          aria-label="Send" 
+        <IconButton
+          color="primary"
+          aria-label="Send"
           size="large"
-          onClick={() => handleSendClick()}
+          //handle click event in TSX and prevent default
+          onClick={handleSendClick}
         >
           <SendIcon />
         </IconButton>

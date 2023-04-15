@@ -55,7 +55,7 @@ func main() {
 
 	if frontend {
 		//start the server
-		runServer()
+		runServer(apiKey)
 	} else {
 		//generate a random uuid
 		uuid := uuid.New().String()
