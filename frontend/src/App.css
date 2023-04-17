@@ -1,5 +1,7 @@
 .App {
   text-align: center;
+  display: flex;
+  width: inherit;
 }
 
 .App-logo {
@@ -11,10 +13,6 @@
   .App-logo {
     animation: App-logo-spin infinite 20s linear;
   }
-}
-
-.App-div {
-  display: flex;
 }
 
 .App-header {

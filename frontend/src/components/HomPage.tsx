@@ -1,12 +1,9 @@
-import React from 'react';
+import { FunctionComponent } from 'react';
 import Layout from './Layout';
-import ChatSession from './ChatSession';
 
-const HomePage: React.FC = () => {
+const HomePage: FunctionComponent = () => {
   return (
-    <Layout>
-       <ChatSession />
-    </Layout>
+    <Layout />
   );
 };
 

@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { FunctionComponent, useContext, useEffect, useState } from "react";
 import styled from "styled-components";
 import {
   Avatar,
@@ -33,9 +33,7 @@ const NewChatForm = styled.form`
   margintop: 15px;
 `;
 
-type ChatSessionsProps = {};
-
-const ChatSessions: React.FC<ChatSessionsProps> = () => {
+const ChatSessions: FunctionComponent = () => {
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
   const [newRole, setNewRole] = useState("");
   const { state, dispatch } = useContext(store);

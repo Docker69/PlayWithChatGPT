@@ -1,10 +1,9 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { FunctionComponent, useContext, useEffect, useState } from "react";
 import { IconButton, Box, Container, TextField } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
 import { store } from "../utils/store";
 import { SEND_CHAT_PROMPT, USER_ROLE } from "../utils/storeConstants";
 import { sendChatPrompt } from "../api/chatAPI";
-type ChatSessionProps = {};
 
 const MessageBubble = ({
   role,
@@ -16,7 +15,8 @@ const MessageBubble = ({
   mine: boolean;
 }) => (
   <Box
-    maxWidth="60%"
+//    display="flex"
+    maxWidth="80%"
     bgcolor={mine ? "#ebebeb" : "#f4f4f4"}
     alignSelf={mine ? "flex-end" : "flex-start"}
     borderRadius="15px"
@@ -33,32 +33,11 @@ const MessageBubble = ({
     >
       {role}
     </p>
-    <p style={{ fontSize: "14px", margin: "0" }}>{content}</p>
+    <p style={{ textAlign: "left", fontSize: "14px", margin: "0" }}>{content}</p>
   </Box>
 );
 
-const ChatSession: React.FC<ChatSessionProps> = () => {
-/*
-  const messages = [
-    { author: "John Doe", message: "Hello!", mine: false },
-    { author: "Jane Smith", message: "Hi, how are you?", mine: true },
-    {
-      author: "John Doe",
-      message: "I am doing good. Thanks for asking.",
-      mine: false,
-    },
-    {
-      author: "Jane Smith",
-      message: "How is your day going?",
-      mine: true,
-    },
-    {
-      author: "John Doe",
-      message: "It is going well. How about yours?",
-      mine: false,
-    },
-  ];
-*/
+const ChatSession: FunctionComponent = () => {
   const [prompt, setPrompt] = useState("");
   const { state, dispatch } = useContext(store);
 
@@ -69,6 +48,7 @@ const ChatSession: React.FC<ChatSessionProps> = () => {
 
     const updatedMessages = [...state.activeChatSession.messages, {role: USER_ROLE, content: prompt}];
     const payload = {...state.activeChatSession, messages: updatedMessages };
+    dispatch({ type: SEND_CHAT_PROMPT, payload: payload });
 
     //wait for sendChatPrompt to return before dispatching
     sendChatPrompt(payload).then(({success, response}) => {
@@ -87,10 +67,10 @@ const ChatSession: React.FC<ChatSessionProps> = () => {
 
   return (
     <Container
-      maxWidth="sm"
+      /*maxWidth="sm"*/
       style={{ height: "100%", display: "flex", flexDirection: "column" }}
     >
-      <Box sx={{ flex: "1", overflowY: "auto", p: "20px" }}>
+      <Box sx={{ display: "flow", flex: "1", overflowY: "auto", p: "20px" }}>
         {state.activeChatSession.messages.map((message, index) => (
           <MessageBubble key={index} {...message} mine={message.role === USER_ROLE ? true : false} />
         ))}
