@@ -1,0 +1,48 @@
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Epilogue:wght@400&display=swap");
+@import url("https://fonts.googleapis.com/icon?family=Material+Icons");
+
+body {
+  margin: 0;
+  line-height: normal;
+}
+:root {
+  /* fonts */
+  --font-epilogue: Epilogue;
+  --main-header: Roboto;
+
+  /* font sizes */
+  --font-size-sm: 14px;
+  --main-header-size: 40px;
+
+  /* Colors */
+  --light-background-default: #fff;
+  --color-silver: #cbc6c6;
+  --text-gray: #666668;
+  --color-black: #000;
+  --color-gray: rgba(255, 255, 255, 0);
+
+  /* Gaps */
+  --gap-sm: 14px;
+  --gap-7xs: 6px;
+  --gap-9xs: 4px;
+
+  /* Paddings */
+  --padding-10xs: 3px;
+  --padding-61xl: 80px;
+  --padding-base: 16px;
+  --padding-xs: 12px;
+  --padding-sm: 14px;
+  --padding-mid: 17px;
+  --padding-mini: 15px;
+  --padding-3xs: 10px;
+  --padding-2xl: 21px;
+  --padding-4xs: 9px;
+  --padding-5xs: 8px;
+
+  /* border radiuses */
+  --br-sm: 14px;
+
+  /* Effects */
+  --border-shadow-top: 0px 1px 0px #e5e5ea inset;
+}
