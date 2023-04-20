@@ -1,4 +1,4 @@
-import { ChatSession } from "../utils/storeConstants";
+import { ChatSession } from "../global/ChatProviderConstants";
 
 const config = {
   serverAddr: 'http://localhost:80',
