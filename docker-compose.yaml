@@ -6,7 +6,7 @@ services:
       dockerfile: Dockerfile
     image: ${DOCKER_USER:-noname}/playwithchatgpt-api:${API_TAG:-latest}
     ports:
-      - "8080:8080"
+      - ":8080"
     networks: 
       - api-network
   web:
