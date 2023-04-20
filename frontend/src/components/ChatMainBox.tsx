@@ -40,29 +40,34 @@ const sampleMessages: GridChatMessagesType[] = [
 */
 const ChatMainBox: FunctionComponent = () => {
   const { state } = useContext(ChatContext);
+  let bothMessages: GridChatMessagesType[] = [];
+  let recievedMessages: GridChatMessagesType[] = [];
+
   //use effect to update state when active chat session changes or new message is sent
   useEffect(() => {
-    console.log(
-      "ChatMessagesGrid useEffect: ",
-      state.activeChatSession.messages
-    );
+    console.debug("ChatMainBox useEffect: ", bothMessages);
   }, [state.activeChatSession.messages]);
 
-  let recievedMessages: GridChatMessagesType[] = [];
-  state.activeChatSession.messages.map((message) => (
+  state.activeChatSession.messages.map((message) => {
+    //split message.content into array of strings by new line or carriage return
+    let lines = message.content.split(/[\n\r]+/);
+    //remove empty string from array
+    lines = lines.filter((line) => line !== "");
+    console.debug("ChatMainBox: lines count in return message:", lines.length);
     recievedMessages.push({
       side: message.role === USER_ROLE ? "right" : "left",
-      avatar: AVATAR,
-      messages: [message.content],
-    })
-  ));
+      avatar: message.role !== USER_ROLE ? AVATAR : "",
+      messages: lines,
+    });
+  });
 
-  let bothMessages: GridChatMessagesType[] = [
-  //  ...sampleMessages,
+  bothMessages = [
+    //  ...sampleMessages,
     ...recievedMessages,
   ];
+
   return (
-    <Box height="100vh" justifySelf="flex-start">
+    <Box overflow="auto" style={{ maxHeight: '100%' }} height="100vh" justifySelf="flex-start">
       <div>
         {bothMessages.map((message, idx) => (
           <ChatMessages

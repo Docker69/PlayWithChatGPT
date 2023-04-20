@@ -14,7 +14,7 @@ const ChatPage: FunctionComponent = () => {
         <Box sx={{ flexGrow: 0, display: { xs: "none", md: "flex" } }}>
           <Sidebar />
         </Box>
-        <Box width="100vh" display="flex" flexDirection="column" maxWidth="xl" flexGrow={1}>
+        <Box width="100vh" height="100vh" display="flex" flexDirection="column" maxWidth="xl" flexGrow={1}>
           <Toolbar />
           <Main />
           <Footer />
