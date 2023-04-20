@@ -12,6 +12,7 @@ type GridChatMessagesType = {
   messages: string[];
 };
 
+/*
 const sampleMessages: GridChatMessagesType[] = [
   {
     side: "left",
@@ -36,7 +37,7 @@ const sampleMessages: GridChatMessagesType[] = [
     messages: ["Im good.", "See u later."],
   },
 ];
-
+*/
 const ChatMainBox: FunctionComponent = () => {
   const { state } = useContext(ChatContext);
   //use effect to update state when active chat session changes or new message is sent
@@ -57,7 +58,7 @@ const ChatMainBox: FunctionComponent = () => {
   ));
 
   let bothMessages: GridChatMessagesType[] = [
-    ...sampleMessages,
+  //  ...sampleMessages,
     ...recievedMessages,
   ];
   return (
