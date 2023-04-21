@@ -1,4 +1,4 @@
-import { ReactNode, createContext, useReducer } from "react";
+import { ReactNode, createContext, useMemo, useReducer } from "react";
 import {
   ChatActionType,
   ChatStateType,
@@ -7,11 +7,13 @@ import {
   SET_DRAWER_STATE,
   SET_NEW_CHAT_DIALOG_STATE,
   SYSTEM_ROLE,
+  SET_WAIT_RESPONSE_STATE,
 } from "../global/ChatProviderConstants";
 
 const initialState: ChatStateType = {
   mobileDrawerOpen: false,
   chatDialogOpen: false,
+  waitingForResponse: false,
   chatSessions: [],
   activeChatSession: { id: "", role: "", messages: [] },
 };
@@ -47,7 +49,9 @@ const reducer = (state: ChatStateType, action: ChatActionType) => {
       return { ...state, mobileDrawerOpen: action.payload };
     case SET_NEW_CHAT_DIALOG_STATE:
       return { ...state, chatDialogOpen: action.payload };
-    default:
+      case SET_WAIT_RESPONSE_STATE:
+        return { ...state, waitingForResponse: action.payload };
+      default:
       return state;
   }
 };
@@ -56,8 +60,15 @@ const reducer = (state: ChatStateType, action: ChatActionType) => {
 const ChatProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(reducer, initialState);
 
+  const value = useMemo(
+    () => ({
+      state: state,
+      dispatch: dispatch
+    }),
+    [state]
+  );
   return (
-    <ChatContext.Provider value={{ state, dispatch }}>
+    <ChatContext.Provider value={value}>
       {children}
     </ChatContext.Provider>
   );

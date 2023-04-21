@@ -16,6 +16,8 @@ import NewChatDialog from "../dialogs/NewChatDialog";
 import { ChatContext } from "../context/ChatProvider";
 
 const ChatSidebar: FunctionComponent = () => {
+  console.debug("ChatSidebar render");
+  
   const drawerWidth = 240;
   const { state, dispatch } = useContext(ChatContext);
 

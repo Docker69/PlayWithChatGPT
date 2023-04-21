@@ -1,10 +1,10 @@
-import { FunctionComponent, useContext, useEffect } from "react";
+import { FunctionComponent, useContext, useEffect, useRef } from "react";
 import { Box } from "@mui/material";
 import ChatMessages from "./ChatMessagesGrid";
 import { ChatContext } from "../context/ChatProvider";
 import { USER_ROLE } from "../global/ChatProviderConstants";
-
-const AVATAR = "/logo50.svg";
+import { CHAT_AVATAR } from "../global/GlobalSontants";
+import { log } from "console";
 
 type GridChatMessagesType = {
   side: "left" | "right";
@@ -40,14 +40,31 @@ const sampleMessages: GridChatMessagesType[] = [
 */
 const ChatMainBox: FunctionComponent = () => {
   const { state } = useContext(ChatContext);
+  const BottomRef = useRef<HTMLDivElement>(null);
   let bothMessages: GridChatMessagesType[] = [];
   let recievedMessages: GridChatMessagesType[] = [];
 
+  console.debug("ChatMainBox render");
+
+  /*
   //use effect to update state when active chat session changes or new message is sent
   useEffect(() => {
-    console.debug("ChatMainBox useEffect: ", bothMessages);
+    console.debug("ChatMainBox useEffect: ", state.activeChatSession.messages);
   }, [state.activeChatSession.messages]);
 
+  //use effect to update grid when state.waitingForResponse changes
+  useEffect(() => {
+    //get the last StyledGrid item and add another StyledGrid item with a loading spinner
+    console.debug("ChatMainBox useEffect: waitingForResponse: ", state.waitingForResponse);
+
+  }, [state.waitingForResponse]);
+  */
+
+  useEffect(() => {
+    // Scroll to the bottom of the container after rendering.
+      BottomRef.current?.scrollIntoView({behavior: 'smooth'});
+  }, [bothMessages]);
+  
   state.activeChatSession.messages.map((message) => {
     //split message.content into array of strings by new line or carriage return
     let lines = message.content.split(/[\n\r]+/);
@@ -56,9 +73,11 @@ const ChatMainBox: FunctionComponent = () => {
     console.debug("ChatMainBox: lines count in return message:", lines.length);
     recievedMessages.push({
       side: message.role === USER_ROLE ? "right" : "left",
-      avatar: message.role !== USER_ROLE ? AVATAR : "",
+      avatar: message.role !== USER_ROLE ? CHAT_AVATAR : "",
       messages: lines,
     });
+
+    return recievedMessages;
   });
 
   bothMessages = [
@@ -75,9 +94,11 @@ const ChatMainBox: FunctionComponent = () => {
             side={message.side}
             avatar={message.avatar}
             messages={[...message.messages]}
+            last={idx === bothMessages.length - 1}
           />
         ))}
       </div>
+      <div ref={BottomRef} />
     </Box>
   );
 };

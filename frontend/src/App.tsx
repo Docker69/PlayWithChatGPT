@@ -6,7 +6,6 @@ import {
   useLocation,
 } from "react-router-dom";
 import ChatPage from "./pages/ChatPage";
-import StateProvider from "./context/ChatProvider";
 
 function App() {
   const action = useNavigationType();
@@ -45,11 +44,9 @@ function App() {
   }, [pathname]);
 
   return (
-    <StateProvider>
-      <Routes>
-        <Route path="/" element={<ChatPage />} />
-      </Routes>
-    </StateProvider>
+    <Routes>
+      <Route path="/" element={<ChatPage />} />
+    </Routes>
   );
 }
 export default App;

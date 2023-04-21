@@ -1,7 +1,8 @@
 import { ChatSession } from "../global/ChatProviderConstants";
 
+//TODO: Remove when running in production
 const config = {
-  serverAddr: 'http://localhost:80',
+  serverAddr: 'http://localhost:80', //for debugging while running locally
   //serverAddr: "",
 };
 
@@ -42,7 +43,7 @@ export async function sendChatPrompt(payload: ChatSession) {
 
   // Send the prompt data to the backend server
   try {
-    const reply = await fetch("/api/send-completion", {
+    const reply = await fetch(`${config.serverAddr}/api/send-completion`, {
       method: "POST",
       body: JSON.stringify(payload),
       headers: {

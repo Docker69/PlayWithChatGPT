@@ -15,42 +15,6 @@ import React from "react";
 import { ChatContext } from "../context/ChatProvider";
 import { SET_DRAWER_STATE } from "../global/ChatProviderConstants";
 
-interface NavigationMenuProps {
-  pages: string[];
-  anchorEl: HTMLElement | null;
-  onClose: () => void;
-}
-
-const NavigationMenu: FunctionComponent<NavigationMenuProps> = ({
-  pages,
-  anchorEl,
-  onClose,
-}) => (
-  <Menu
-    id="menu-appbar"
-    anchorEl={anchorEl}
-    anchorOrigin={{
-      vertical: "bottom",
-      horizontal: "left",
-    }}
-    keepMounted
-    transformOrigin={{
-      vertical: "top",
-      horizontal: "left",
-    }}
-    open={Boolean(anchorEl)}
-    onClose={onClose}
-    sx={{
-      display: { xs: "block", md: "none" },
-    }}
-  >
-    {pages.map((page) => (
-      <MenuItem key={page} onClick={onClose}>
-        <Typography textAlign="center">{page}</Typography>
-      </MenuItem>
-    ))}
-  </Menu>
-);
 
 interface UserMenuProps {
   settings: string[];

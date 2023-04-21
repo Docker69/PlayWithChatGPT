@@ -3,6 +3,7 @@ export const NEW_CHAT_SESSION = "NEW_CHAT_SESSION";
 export const SEND_CHAT_PROMPT = "SEND_CHAT_PROMPT";
 export const SET_DRAWER_STATE = "SET_DRAWER_STATE";
 export const SET_NEW_CHAT_DIALOG_STATE = "SET_NEW_CHAT_DIALOG_STATE";
+export const SET_WAIT_RESPONSE_STATE = "SET_WAIT_RESPONSE_STATE";
 
 //create constants for roles
 export const SYSTEM_ROLE = "system";
@@ -25,6 +26,7 @@ export type ChatStateType = {
   activeChatSession: ChatSession;
   mobileDrawerOpen: boolean;
   chatDialogOpen: boolean;
+  waitingForResponse: boolean;
 };
 
 //define action types with imported constants
@@ -32,7 +34,9 @@ export type ChatActionType =
   | { type: typeof NEW_CHAT_SESSION; payload: ChatSession }
   | { type: typeof SEND_CHAT_PROMPT; payload: ChatSession }
   | { type: typeof SET_DRAWER_STATE; payload: boolean }
-  | { type: typeof SET_NEW_CHAT_DIALOG_STATE; payload: boolean };
+  | { type: typeof SET_NEW_CHAT_DIALOG_STATE; payload: boolean }
+  | { type: typeof SET_WAIT_RESPONSE_STATE; payload: boolean };
+
 
 // Add action send prompt here
 
