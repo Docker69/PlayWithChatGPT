@@ -3,21 +3,23 @@ import {
   Divider,
   Drawer,
   List,
-  ListItem,
   ListItemButton,
   ListItemIcon,
   ListItemText,
   Toolbar,
 } from "@mui/material";
 import AddCommentIcon from "@mui/icons-material/AddComment";
-import ChatIcon from '@mui/icons-material/Chat';
-import { SET_DRAWER_STATE, SET_NEW_CHAT_DIALOG_STATE } from "../global/ChatProviderConstants";
+import ChatIcon from "@mui/icons-material/Chat";
+import {
+  SET_DRAWER_STATE,
+  SET_NEW_CHAT_DIALOG_STATE,
+} from "../global/ChatProviderConstants";
 import NewChatDialog from "../dialogs/NewChatDialog";
 import { ChatContext } from "../context/ChatProvider";
 
 const ChatSidebar: FunctionComponent = () => {
   console.debug("ChatSidebar render");
-  
+
   const drawerWidth = 240;
   const { state, dispatch } = useContext(ChatContext);
 
@@ -33,13 +35,19 @@ const ChatSidebar: FunctionComponent = () => {
       payload: true,
     });
   };
-  
+
   useEffect(() => {
-    console.log("ChatSidebar useEffect, state.mobileDrawerOpen", state.mobileDrawerOpen);
+    console.log(
+      "ChatSidebar useEffect, state.mobileDrawerOpen",
+      state.mobileDrawerOpen
+    );
   }, [state.mobileDrawerOpen]);
 
   useEffect(() => {
-    console.log("ChatSidebar useEffect, state.chatSessions: ", state.chatSessions);
+    console.log(
+      "ChatSidebar useEffect, state.chatSessions: ",
+      state.chatSessions
+    );
   }, [state.chatSessions]);
 
   const drawer = (
@@ -48,23 +56,23 @@ const ChatSidebar: FunctionComponent = () => {
       <Divider />
       <List>
         {state.chatSessions.map((session) => (
-          <ListItem key={session.id} disablePadding>
-            <ListItemButton>
-              <ListItemIcon>
-                <ChatIcon />
-              </ListItemIcon>
-              <ListItemText primary={session.role} />
-            </ListItemButton>
-          </ListItem>
-        ))}
-          <ListItem key="New Chat" disablePadding>
-          <ListItemButton onClick={openNewChatDialog}>
+          //if the session is active, set the active class
+          <ListItemButton
+            key={session.id}
+            selected={session.id === state.activeChatSession.id}
+          >
             <ListItemIcon>
-              <AddCommentIcon />
+              <ChatIcon />
             </ListItemIcon>
-            <ListItemText primary={"New Chat"} />
+            <ListItemText primary={session.role} />
           </ListItemButton>
-        </ListItem>
+        ))}
+        <ListItemButton key="New Chat" onClick={openNewChatDialog}>
+          <ListItemIcon>
+            <AddCommentIcon />
+          </ListItemIcon>
+          <ListItemText primary={"New Chat"} />
+        </ListItemButton>
       </List>
       <NewChatDialog />
     </div>
