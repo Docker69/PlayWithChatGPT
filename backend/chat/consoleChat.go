@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	mongodb "backend/db"
-	completionmodels "backend/models"
+	models "backend/models"
 	mylogger "backend/utils"
 
 	"github.com/sashabaranov/go-openai"
@@ -25,14 +25,51 @@ func StartConsoleChat(apiKey string) {
 	mylogger.Logger.Info("New console chat started!")
 
 	//declare pointer to chat struct and initialize it
-	var chat *completionmodels.ChatCompletionRequestBody = new(completionmodels.ChatCompletionRequestBody)
+	var chat *models.ChatCompletionRequestBody = new(models.ChatCompletionRequestBody)
 
 	// create a buffered reader to read input from the console
 	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Print("ChatGPT Role -> ")
+	//Read Human Nickname from console
+	fmt.Print("Enter your nickname -> ")
 	// read input from console
 	text, _ := reader.ReadString('\n')
+	// replace CRLF with LF in the text
+	text = strings.Replace(text, "\n", "", -1)
+	humnan, err := mongodb.HumansCollection.GetByNickname(context.Background(), text)
+	if err != nil {
+		mylogger.Logger.Errorf("GetHumanByNickname error: %v\n", err)
+	}
+
+	//check if human exists
+	if humnan.Id == "" {
+		mylogger.Logger.Infof("Human with nickname %s not found!\n", text)
+		//ask for human name
+		fmt.Print("Enter your name -> ")
+		// read input from console
+		text, _ = reader.ReadString('\n')
+		// replace CRLF with LF in the text
+		text = strings.Replace(text, "\n", "", -1)
+		humnan.Name = text
+		//ask for human nickname
+		fmt.Print("Enter your nickname -> ")
+		// read input from console
+		text, _ = reader.ReadString('\n')
+		// replace CRLF with LF in the text
+		text = strings.Replace(text, "\n", "", -1)
+		humnan.NickName = text
+		//insert human to db
+		_id, err := mongodb.HumansCollection.Insert(context.Background(), &humnan)
+		if err != nil {
+			mylogger.Logger.Errorf("InsertHuman error: %v\n", err)
+			return
+		}
+		humnan.Id = _id
+	}
+
+	fmt.Print("ChatGPT Role -> ")
+	// read input from console
+	text, _ = reader.ReadString('\n')
 
 	// replace CRLF with LF in the text
 	text = strings.Replace(text, "\n", "", -1)
@@ -45,13 +82,20 @@ func StartConsoleChat(apiKey string) {
 	chat.Role = text
 
 	//pass the chat as pointer to the function
-	_id, err := mongodb.InitNewChatDocument(chat)
+	_id, err := mongodb.ChatsCollection.Insert(context.Background(), chat)
 	if err != nil {
 		mylogger.Logger.Errorf("InitNewChatDocument error: %v\n", err)
 	}
 
 	chat.Id = _id
 	fmt.Println("Chat ID: ", chat.Id)
+
+	//add chat id to human
+	humnan.ChatIds = append(humnan.ChatIds, chat.Id)
+	err = mongodb.HumansCollection.UpdateChats(context.Background(), &humnan)
+	if err != nil {
+		mylogger.Logger.Errorf("UpdateHumanChats error: %v\n", err)
+	}
 
 	mylogger.Logger.WithFields(
 		logrus.Fields{
@@ -84,7 +128,7 @@ func StartConsoleChat(apiKey string) {
 		})
 
 		//Update the chat document in the database
-		err := mongodb.UpdateChat(chat)
+		err := mongodb.ChatsCollection.Update(context.Background(), chat)
 
 		if err != nil {
 			mylogger.Logger.WithField("UUID", chat.Id).Errorf("UpdateChat error: %v\n", err)
@@ -118,7 +162,7 @@ func StartConsoleChat(apiKey string) {
 		})
 
 		//Update the chat document in the database
-		err = mongodb.UpdateChat(chat)
+		err = mongodb.ChatsCollection.Update(context.Background(), chat)
 		if err != nil {
 			mylogger.Logger.WithField("UUID", chat.Id).Errorf("UpdateChat error: %v\n", err)
 			continue

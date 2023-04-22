@@ -6,17 +6,14 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	completionmodels "backend/models"
 	mylogger "backend/utils"
 )
 
-// collection object/instance
-var chatsCollection *mongo.Collection
+var ChatsCollection *ChatsCollectionType = nil
+var HumansCollection *HumansCollectionType = nil
 
 var envVars = [...]string{"MONGO_HOST", "MONGO_PORT", "MONGO_USER_NAME", "MONGO_USER_PASSWORD", "MONGO_DATABASE"}
 
@@ -62,72 +59,8 @@ func init() {
 
 	mylogger.Logger.Info("Connected to MongoDB!")
 
-	chatsCollection = client.Database(env["MONGO_DATABASE"]).Collection("chats")
+	ChatsCollection = NewChatsCollection(client.Database(env["MONGO_DATABASE"]).Collection("chats"))
+	HumansCollection = NewHumansCollection(client.Database(env["MONGO_DATABASE"]).Collection("humans"))
 
-	mylogger.Logger.Info("chats collection instance created!")
-}
-
-// get all the chats from the DB and return them and error
-func GetAllChats() ([]completionmodels.ChatCompletionRequestBody, error) {
-	cur, err := chatsCollection.Find(context.Background(), bson.D{{}})
-	if err != nil {
-		mylogger.Logger.Fatalf("Error getting all chats. Err: %s", err)
-	}
-	defer cur.Close(context.Background())
-
-	var results []completionmodels.ChatCompletionRequestBody
-	for cur.Next(context.Background()) {
-		var result completionmodels.ChatCompletionRequestBody
-		e := cur.Decode(&result)
-		if e != nil {
-			mylogger.Logger.Fatalf("Error decoding chat. Err: %s", e)
-		}
-		results = append(results, result)
-	}
-
-	if err := cur.Err(); err != nil {
-		mylogger.Logger.Fatalf("Error getting all chats. Err: %s", err)
-	}
-
-	mylogger.Logger.Debug("Get all chats successful!")
-
-	//return results and error
-	return results, err
-}
-
-// Insert new Chat in the DB
-func InitNewChatDocument(chat *completionmodels.ChatCompletionRequestBody) (string, error) {
-	insertResult, err := chatsCollection.InsertOne(context.Background(), chat)
-
-	if err != nil {
-		mylogger.Logger.Errorf("Error inserting chat. Err: %s", err)
-	}
-
-	return insertResult.InsertedID.(primitive.ObjectID).Hex(), nil
-}
-
-// Update the chat in the DB
-func UpdateChat(chat *completionmodels.ChatCompletionRequestBody) error {
-	id, _ := primitive.ObjectIDFromHex(chat.Id)
-	filter := bson.M{"_id": id}
-	update := bson.M{"$set": bson.M{"messages": chat.Messages}}
-
-	_, err := chatsCollection.UpdateOne(context.Background(), filter, update)
-
-	if err != nil {
-		mylogger.Logger.Errorf("Error updating chat. Err: %s", err)
-	}
-
-	return nil
-}
-
-// delete all the chats from the DB
-func DeleteAllChats() int64 {
-	d, err := chatsCollection.DeleteMany(context.Background(), bson.D{{}}, nil)
-	if err != nil {
-		mylogger.Logger.Fatalf("Error deleting all chats. Err: %s", err)
-	}
-
-	mylogger.Logger.Debugf("Deleted Document, count: %d", d.DeletedCount)
-	return d.DeletedCount
+	mylogger.Logger.Info("MongoDB collections initialized!")
 }

@@ -1,6 +1,6 @@
 // logger.go
 
-package mylogger
+package pwcglogger
 
 import (
 	"io"

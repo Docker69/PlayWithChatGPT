@@ -1,4 +1,4 @@
-package completionmodels
+package models
 
 import "github.com/sashabaranov/go-openai"
 

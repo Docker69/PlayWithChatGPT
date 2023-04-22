@@ -14,6 +14,7 @@ db.createUser({
 
 db.createCollection('chats')
 db.createCollection('config')
+db.createCollection('humans')
 
 print("============= Ended INIT script =======================");
 

@@ -174,7 +174,7 @@ func runServer(apiKey string) {
 		mylogger.Logger.Info("Received Get All Chats request")
 
 		//Call the chat completion function and get the response, handle error
-		resBody, err := mongodb.GetAllChats()
+		resBody, err := mongodb.ChatsCollection.GetAll(context.TODO())
 
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, map[string]string{
