@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"backend/chat"
+	router "backend/router"
 	mylogger "backend/utils"
 
 	"github.com/joho/godotenv"
@@ -54,7 +55,7 @@ func main() {
 
 	if frontend {
 		//start the server
-		runServer(apiKey)
+		router.RunServer(apiKey)
 	} else {
 		// start chat via console
 		chat.StartConsoleChat(apiKey)

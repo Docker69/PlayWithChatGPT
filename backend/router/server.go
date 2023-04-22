@@ -1,4 +1,4 @@
-package main
+package router
 
 import (
 	"backend/chat"
@@ -20,8 +20,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// init Server
+func init() {
+}
+
 // run server function
-func runServer(apiKey string) {
+func RunServer(apiKey string) {
 	// create http server using Echo framework
 	router := echo.New()
 
@@ -79,29 +83,6 @@ func runServer(apiKey string) {
 		}
 	})
 
-	/* 		// use mylogger middleware
-	   		router.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-	   			Format: "${status} ${method} ${uri} ${latency_human}\n",
-	   			Output: mylogger.Logger.Out,
-	   		}))
-
-	   		// set response logging to JSON
-	   		router.Use(middleware.BodyDump(func(c echo.Context, reqBody, resBody []byte) {
-	   			type ResponseLog struct {
-	   				Status     int    `json:"status"`
-	   				StatusText string `json:"statustext,omitempty"`
-	   				//Data       interface{} `json:"data,omitempty"`
-	   			}
-	   			id := c.Response().Header().Get(echo.HeaderXRequestID)
-	   			logData := ResponseLog{
-	   				Status:     c.Response().Status,
-	   				StatusText: http.StatusText(c.Response().Status),
-	   				//Data:       c.Get("response"),
-	   			}
-	   			//msg := fmt.Sprintf(`{"reqid":"%v", "response":%+v}`, id, logData)
-	   			mylogger.Logger.Infof(`{"reqid":"%v", "response":%+v}`, id, logData)
-	   		}))
-	*/
 	// Example API endpoint
 	router.GET("/ping", func(c echo.Context) error {
 
