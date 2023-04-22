@@ -1,7 +1,6 @@
 package router
 
 import (
-	"backend/chat"
 	mongodb "backend/db"
 	mylogger "backend/utils"
 	"context"
@@ -12,20 +11,32 @@ import (
 	"syscall"
 	"time"
 
-	completionmodels "backend/models"
-
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/sirupsen/logrus"
 )
 
+var apiKey = ""
+
 // init Server
 func init() {
 }
 
 // run server function
-func RunServer(apiKey string) {
+func RunServer(key string) {
+
+	//set the OpenAI api key
+	apiKey = key
+
+	//get port from env
+	port, exists := os.LookupEnv("LISTEN_PORT")
+
+	if !exists {
+		mylogger.Logger.Warn("LISTEN_PORT not defined in env, using default port 8080")
+		port = "8080"
+	}
+
 	// create http server using Echo framework
 	router := echo.New()
 
@@ -67,6 +78,7 @@ func RunServer(apiKey string) {
 		}
 	})
 
+	//TODO: fill actual id of the chat
 	// add a custom middleware to set the response header
 	router.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -84,102 +96,23 @@ func RunServer(apiKey string) {
 	})
 
 	// Example API endpoint
-	router.GET("/ping", func(c echo.Context) error {
-
-		// log a message using logrus logger
-		mylogger.Logger.Info("Received request")
-
-		return c.JSON(http.StatusOK, map[string]string{
-			"message": "pong",
-		})
-	})
+	router.GET("/ping", handlePing)
 
 	// Init Chat API endpoint
-	router.POST("/api/init", func(c echo.Context) error {
+	router.POST("/api/init", handleInitChat)
 
-		// log a message using logrus logger
-		mylogger.Logger.Info("Received chat init request")
+	// post chat completion to API endpoint
+	router.POST("/api/send-completion", handleChatCompletion)
 
-		// get request body
-		reqBody := completionmodels.ChatCompletionRequestBody{}
+	// get all chats list
+	router.POST("/api/getallchatslist", handleGetChatsList)
 
-		if err := c.Bind(&reqBody); err != nil {
-			return c.JSON(http.StatusBadRequest, map[string]string{
-				"error": "invalid request body",
-			})
-		}
-
-		// generate a random uuid
-		reqBody.Id = uuid.New().String()
-
-		// return reqBody as json
-		return c.JSON(http.StatusOK, reqBody)
-
-	})
-
-	// Init Chat API endpoint
-	router.POST("/api/send-completion", func(c echo.Context) error {
-
-		// log a message using logrus logger
-		mylogger.Logger.Info("Received chat completion request")
-
-		// get request body
-		reqBody := completionmodels.ChatCompletionRequestBody{}
-
-		if err := c.Bind(&reqBody); err != nil {
-			return c.JSON(http.StatusBadRequest, map[string]string{
-				"error": "invalid request body",
-			})
-		}
-
-		//Call the chat completion function and get the response, handle error
-		resp, err := chat.ChatCompletion(apiKey, reqBody)
-		if err != nil {
-			return c.JSON(http.StatusBadRequest, map[string]string{
-				"error": err.Error(),
-			})
-		}
-
-		//spread request body and replace Message with response
-		reqBody.Messages = resp
-
-		// return reqBody as json
-		return c.JSON(http.StatusOK, reqBody)
-
-	})
-
-	// Init Chat API endpoint
-	router.POST("/api/getallchats", func(c echo.Context) error {
-
-		// log a message using logrus logger
-		mylogger.Logger.Info("Received Get All Chats request")
-
-		//Call the chat completion function and get the response, handle error
-		resBody, err := mongodb.ChatsCollection.GetAll(context.TODO())
-
-		if err != nil {
-			return c.JSON(http.StatusBadRequest, map[string]string{
-				"error": err.Error(),
-			})
-		}
-
-		// return reqBody as json
-		return c.JSON(http.StatusOK, resBody)
-	})
-
+	//TODO: handle CORS properly
 	//handle CORS
 	router.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: []string{"*"},
 		AllowMethods: []string{http.MethodGet, http.MethodPut, http.MethodPost, http.MethodDelete},
 	}))
-
-	//get port from env
-	port, exists := os.LookupEnv("LISTEN_PORT")
-
-	if !exists {
-		mylogger.Logger.Warn("LISTEN_PORT not defined in env, using default port 8080")
-		port = "8080"
-	}
 
 	// Start server
 	server := &http.Server{
@@ -217,6 +150,15 @@ func RunServer(apiKey string) {
 			return
 		}
 		mylogger.Logger.Fatalf("Server forced to shutdown: %s", err.Error())
+	}
+
+	if err := mongodb.Shutdown(ctx); err != nil {
+		if ctx.Err() != nil {
+			// context already cancelled
+			mylogger.Logger.Info("MongoDB shutdown cancelled")
+			return
+		}
+		mylogger.Logger.Fatalf("MongoDB forced to shutdown: %s", err.Error())
 	}
 
 	mylogger.Logger.Info("Server exiting")

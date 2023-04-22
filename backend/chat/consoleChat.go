@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	mongodb "backend/db"
 	models "backend/models"
@@ -180,5 +181,20 @@ func StartConsoleChat(apiKey string) {
 		mylogger.Logger.WithField("UUID", _id).Debugf("Tokens: %s", jsonStr)
 	}
 	reader.Reset(os.Stdin)
+
+	// The context is used to inform the server it has 20 seconds to finish
+	// the request it is currently handling
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+
+	if err := mongodb.Shutdown(ctx); err != nil {
+		if ctx.Err() != nil {
+			// context already cancelled
+			mylogger.Logger.Info("MongoDB shutdown cancelled")
+			return
+		}
+		mylogger.Logger.Fatalf("MongoDB forced to shutdown: %s", err.Error())
+	}
+
 	mylogger.Logger.WithField("UUID", _id).Info("Console Chat Ended!")
 }
