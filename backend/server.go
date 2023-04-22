@@ -1,6 +1,8 @@
 package main
 
 import (
+	"backend/chat"
+	mongodb "backend/db"
 	mylogger "backend/utils"
 	"context"
 	"fmt"
@@ -10,7 +12,7 @@ import (
 	"syscall"
 	"time"
 
-	"backend/chat"
+	completionmodels "backend/models"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -118,7 +120,7 @@ func runServer(apiKey string) {
 		mylogger.Logger.Info("Received chat init request")
 
 		// get request body
-		reqBody := chat.ChatCompletionRequestBody{}
+		reqBody := completionmodels.ChatCompletionRequestBody{}
 
 		if err := c.Bind(&reqBody); err != nil {
 			return c.JSON(http.StatusBadRequest, map[string]string{
@@ -141,7 +143,7 @@ func runServer(apiKey string) {
 		mylogger.Logger.Info("Received chat completion request")
 
 		// get request body
-		reqBody := chat.ChatCompletionRequestBody{}
+		reqBody := completionmodels.ChatCompletionRequestBody{}
 
 		if err := c.Bind(&reqBody); err != nil {
 			return c.JSON(http.StatusBadRequest, map[string]string{
@@ -163,6 +165,25 @@ func runServer(apiKey string) {
 		// return reqBody as json
 		return c.JSON(http.StatusOK, reqBody)
 
+	})
+
+	// Init Chat API endpoint
+	router.POST("/api/getallchats", func(c echo.Context) error {
+
+		// log a message using logrus logger
+		mylogger.Logger.Info("Received Get All Chats request")
+
+		//Call the chat completion function and get the response, handle error
+		resBody, err := mongodb.GetAllChats()
+
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]string{
+				"error": err.Error(),
+			})
+		}
+
+		// return reqBody as json
+		return c.JSON(http.StatusOK, resBody)
 	})
 
 	//handle CORS

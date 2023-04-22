@@ -8,6 +8,8 @@ import (
 	"os"
 	"strings"
 
+	mongodb "backend/db"
+	completionmodels "backend/models"
 	mylogger "backend/utils"
 
 	"github.com/sashabaranov/go-openai"
@@ -18,11 +20,12 @@ import (
 const quitStr = "!quit"
 
 // StartConsoleChat starts an infinite loop that will keep asking for user input until !quit command is entered
-func StartConsoleChat(apiKey string, uuid string) {
+func StartConsoleChat(apiKey string) {
 
-	mylogger.Logger.WithField("UUID", uuid).Info("New console chat started!")
-	//declare messages
-	messages := make([]openai.ChatCompletionMessage, 0)
+	mylogger.Logger.Info("New console chat started!")
+
+	//declare pointer to chat struct and initialize it
+	var chat *completionmodels.ChatCompletionRequestBody = new(completionmodels.ChatCompletionRequestBody)
 
 	// create a buffered reader to read input from the console
 	reader := bufio.NewReader(os.Stdin)
@@ -35,15 +38,25 @@ func StartConsoleChat(apiKey string, uuid string) {
 	text = strings.Replace(text, "\n", "", -1)
 
 	// add the message to a list of messages
-	messages = append(messages, openai.ChatCompletionMessage{
+	chat.Messages = append(chat.Messages, openai.ChatCompletionMessage{
 		Role:    openai.ChatMessageRoleSystem,
 		Content: text,
 	})
+	chat.Role = text
+
+	//pass the chat as pointer to the function
+	_id, err := mongodb.InitNewChatDocument(chat)
+	if err != nil {
+		mylogger.Logger.Errorf("InitNewChatDocument error: %v\n", err)
+	}
+
+	chat.Id = _id
+	fmt.Println("Chat ID: ", chat.Id)
 
 	mylogger.Logger.WithFields(
 		logrus.Fields{
 			"role": text,
-			"UUID": uuid,
+			"UUID": _id,
 		}).Info("Setting ChatGPT role")
 
 	fmt.Println("Conversation")
@@ -65,10 +78,18 @@ func StartConsoleChat(apiKey string, uuid string) {
 		text = strings.Replace(text, "\n", "", -1)
 
 		// add the message to a list of messages
-		messages = append(messages, openai.ChatCompletionMessage{
+		chat.Messages = append(chat.Messages, openai.ChatCompletionMessage{
 			Role:    openai.ChatMessageRoleUser,
 			Content: text,
 		})
+
+		//Update the chat document in the database
+		err := mongodb.UpdateChat(chat)
+
+		if err != nil {
+			mylogger.Logger.WithField("UUID", chat.Id).Errorf("UpdateChat error: %v\n", err)
+			continue
+		}
 
 		// create new client instance with given apiKey
 		client := openai.NewClient(apiKey)
@@ -78,12 +99,12 @@ func StartConsoleChat(apiKey string, uuid string) {
 			context.Background(),
 			openai.ChatCompletionRequest{
 				Model:    openai.GPT3Dot5Turbo,
-				Messages: messages,
+				Messages: chat.Messages,
 			},
 		)
 
 		if err != nil {
-			mylogger.Logger.WithField("UUID", uuid).Errorf("ChatCompletion error: %v\n", err)
+			mylogger.Logger.WithField("UUID", _id).Errorf("ChatCompletion error: %v\n", err)
 			continue
 		}
 
@@ -91,22 +112,29 @@ func StartConsoleChat(apiKey string, uuid string) {
 		content := resp.Choices[0].Message.Content
 
 		// add the response to the list of messages
-		messages = append(messages, openai.ChatCompletionMessage{
+		chat.Messages = append(chat.Messages, openai.ChatCompletionMessage{
 			Role:    openai.ChatMessageRoleAssistant,
 			Content: content,
 		})
 
+		//Update the chat document in the database
+		err = mongodb.UpdateChat(chat)
+		if err != nil {
+			mylogger.Logger.WithField("UUID", chat.Id).Errorf("UpdateChat error: %v\n", err)
+			continue
+		}
+
 		// print the generated response to console
 		fmt.Println(content)
 
-		mylogger.Logger.WithField("UUID", uuid).Debugf("Model: %s", resp.Model)
+		mylogger.Logger.WithField("UUID", _id).Debugf("Model: %s", resp.Model)
 
-		jsonStr, _ := json.Marshal(messages)
-		mylogger.Logger.WithField("UUID", uuid).Debugf("Messages: %s", jsonStr)
+		jsonStr, _ := json.Marshal(chat.Messages)
+		mylogger.Logger.WithField("UUID", _id).Debugf("Messages: %s", jsonStr)
 
 		jsonStr, _ = json.Marshal(resp.Usage)
-		mylogger.Logger.WithField("UUID", uuid).Debugf("Tokens: %s", jsonStr)
+		mylogger.Logger.WithField("UUID", _id).Debugf("Tokens: %s", jsonStr)
 	}
 	reader.Reset(os.Stdin)
-	mylogger.Logger.WithField("UUID", uuid).Info("Console Chat Ended!")
+	mylogger.Logger.WithField("UUID", _id).Info("Console Chat Ended!")
 }

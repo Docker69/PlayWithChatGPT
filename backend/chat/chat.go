@@ -2,6 +2,7 @@ package chat
 
 // import gin framework
 import (
+	completionmodels "backend/models"
 	mylogger "backend/utils"
 	"context"
 	"encoding/json"
@@ -9,14 +10,8 @@ import (
 	"github.com/sashabaranov/go-openai"
 )
 
-type ChatCompletionRequestBody struct {
-	Id       string                         `json:"id"`
-	Role     string                         `json:"role"`
-	Messages []openai.ChatCompletionMessage `json:"messages"`
-}
-
 // chat function is the main function of the chat package
-func ChatCompletion(apiKey string, reqBody ChatCompletionRequestBody) ([]openai.ChatCompletionMessage, error) {
+func ChatCompletion(apiKey string, reqBody completionmodels.ChatCompletionRequestBody) ([]openai.ChatCompletionMessage, error) {
 	mylogger.Logger.WithField("UUID", reqBody.Id).Info("Chat Completion Request")
 
 	// create new client instance with given apiKey

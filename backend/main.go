@@ -8,7 +8,6 @@ import (
 	"backend/chat"
 	mylogger "backend/utils"
 
-	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 )
 
@@ -57,10 +56,7 @@ func main() {
 		//start the server
 		runServer(apiKey)
 	} else {
-		//generate a random uuid
-		uuid := uuid.New().String()
-
 		// start chat via console
-		chat.StartConsoleChat(apiKey, uuid)
+		chat.StartConsoleChat(apiKey)
 	}
 }
