@@ -46,7 +46,7 @@ export default function NewChatDialog() {
         <DialogContent>
           <DialogContentText>
             Enter the desired role for the new chat.
-            For example, "Customer Service" or "Helpful Developer"
+            For example, &quot;Customer Service&quot; or &quot;Helpful Developer&quot;
           </DialogContentText>
           <TextField
             autoFocus

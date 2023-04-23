@@ -1,4 +1,4 @@
-import { ChatSession } from "../global/ChatProviderConstants";
+import { ChatSession } from "../../global/ChatProviderConstants";
 
 //TODO: Remove when running in production
 const config = {

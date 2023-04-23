@@ -18,13 +18,11 @@ import { ChatContext } from "../context/ChatProvider";
 import { SET_DRAWER_STATE } from "../global/ChatProviderConstants";
 import { signOut } from "next-auth/react";
 
-
-
-
 interface UserMenuProps {
   settings: string[];
   anchorEl: HTMLElement | null;
-  onClose: () => void;
+  onClose?: React.MouseEventHandler | undefined;
+
 }
 
 const UserMenu: FunctionComponent<UserMenuProps> = ({
@@ -64,14 +62,12 @@ const AppBarNavigation2: FunctionComponent = () => {
   const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorElUser(event.currentTarget);
   };
-
+  
   const handleCloseUserMenu = (event: React.MouseEvent<HTMLElement>) => {
-    console.log(event.currentTarget.textContent);
     if (event.currentTarget.textContent==='Logout')
     {
       signOut();
     }
-
     setAnchorElUser(null);
   };
 

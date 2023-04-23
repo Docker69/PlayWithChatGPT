@@ -1,7 +1,7 @@
 import './globals.css'
 import { Inter } from 'next/font/google'
 import { getServerSession } from "next-auth"
-import { authOptions } from "./api/auth/[..nextauth]"
+import { authOptions } from "../pages/api/auth/[...nextauth]"
 import { SessionProvider } from "../components/SessionProvider";
 import Login from '@/components/Login';
 
@@ -18,8 +18,7 @@ export default async function RootLayout({
   children: React.ReactNode
 }) {
   const session = await getServerSession(authOptions);
-  console.log("session=>test");
-  console.log("session=>" + session);
+
   return (
     <html lang="en">
             <body className={inter.className}>
