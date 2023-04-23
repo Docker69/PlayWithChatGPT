@@ -142,7 +142,7 @@ const AppBarNavigation2: FunctionComponent = () => {
           <Box sx={{ flexGrow: 0 }} marginRight={2}>
             <Tooltip title="Open settings">
               <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
-                <Avatar alt="Remy Sharp" src="/static/images/avatar/2.jpg" />
+                <Avatar alt="Remy Sharp" src="/profile.svg" />
               </IconButton>
             </Tooltip>
             <UserMenu
