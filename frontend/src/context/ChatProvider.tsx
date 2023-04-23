@@ -1,3 +1,4 @@
+"use client"
 import { ReactNode, createContext, useMemo, useReducer } from "react";
 import {
   ChatActionType,

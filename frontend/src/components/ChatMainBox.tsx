@@ -1,3 +1,6 @@
+"use client"
+
+
 import { FunctionComponent, useContext, useEffect, useRef } from "react";
 import { Box } from "@mui/material";
 import ChatMessages from "./ChatMessagesGrid";

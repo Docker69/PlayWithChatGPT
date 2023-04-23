@@ -1,3 +1,5 @@
+"use client"
+
 import { FunctionComponent, useContext, useEffect } from "react";
 import {
   Divider,

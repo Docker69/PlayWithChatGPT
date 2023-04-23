@@ -1,3 +1,5 @@
+"use client"
+
 import { FunctionComponent, useContext, useState } from "react";
 import {
   AppBar,
@@ -14,6 +16,9 @@ import MenuIcon from "@mui/icons-material/Menu";
 import React from "react";
 import { ChatContext } from "../context/ChatProvider";
 import { SET_DRAWER_STATE } from "../global/ChatProviderConstants";
+import { signOut } from "next-auth/react";
+
+
 
 
 interface UserMenuProps {
@@ -60,7 +65,13 @@ const AppBarNavigation2: FunctionComponent = () => {
     setAnchorElUser(event.currentTarget);
   };
 
-  const handleCloseUserMenu = () => {
+  const handleCloseUserMenu = (event: React.MouseEvent<HTMLElement>) => {
+    console.log(event.currentTarget.textContent);
+    if (event.currentTarget.textContent==='Logout')
+    {
+      signOut();
+    }
+
     setAnchorElUser(null);
   };
 

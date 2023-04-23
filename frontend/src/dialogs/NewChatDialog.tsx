@@ -1,3 +1,5 @@
+"use client"
+
 import * as React from 'react';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
@@ -8,7 +10,7 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import { NEW_CHAT_SESSION, SET_NEW_CHAT_DIALOG_STATE } from '../global/ChatProviderConstants';
 import { ChatContext } from '../context/ChatProvider';
-import { initChat } from '../api/chatAPI';
+import { initChat } from '../app/api/chatAPI';
 
 export default function NewChatDialog() {
   const { state, dispatch } = React.useContext(ChatContext);

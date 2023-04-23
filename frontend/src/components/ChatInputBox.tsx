@@ -1,3 +1,7 @@
+/* eslint-disable react/display-name */
+/* eslint-disable @next/next/no-img-element */
+"use client"
+
 import {
   FunctionComponent,
   memo,
@@ -12,7 +16,7 @@ import {
   SET_WAIT_RESPONSE_STATE,
   USER_ROLE,
 } from "../global/ChatProviderConstants";
-import { sendChatPrompt } from "../api/chatAPI";
+import { sendChatPrompt } from "../app/api/chatAPI";
 
 const ChatInputBox: FunctionComponent = memo(() => {
 
