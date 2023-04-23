@@ -2,6 +2,7 @@
 FROM node:lts-alpine as build-stage
 WORKDIR /app
 COPY *.json ./
+COPY next.config.js ./
 COPY src ./src
 COPY public ./public
 

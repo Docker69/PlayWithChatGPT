@@ -99,16 +99,16 @@ func RunServer(key string) {
 	router.GET("/ping", handlePing)
 
 	// Init Chat API endpoint
-	router.POST("/api/init/session", handleInitSession)
+	router.POST("/api/v0/init/session", handleInitSession)
 
 	// Init Chat API endpoint
-	router.POST("/api/init/chat", handleInitChat)
+	router.POST("/api/v0/init/chat", handleInitChat)
 
 	// post chat completion to API endpoint
-	router.POST("/api/send-completion", handleChatCompletion)
+	router.POST("/api/v0/send-completion", handleChatCompletion)
 
 	// get all chats list
-	router.POST("/api/getallchatslist", handleGetChatsList)
+	router.POST("/api/v0/getallchatslist", handleGetChatsList)
 
 	//TODO: handle CORS properly
 	//handle CORS

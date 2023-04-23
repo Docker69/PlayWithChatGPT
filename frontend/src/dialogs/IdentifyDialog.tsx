@@ -8,7 +8,7 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import { Human, SET_HUMAN, SET_INIT_SESSION_DIALOG_STATE } from '../global/ChatProviderConstants';
 import { ChatContext } from '../context/ChatProvider';
-import { initSession } from '../api/chatAPI';
+import { initSession } from '../app/api/chatAPI';
 
 export default function IdentifyDialog() {
   const { state, dispatch } = React.useContext(ChatContext);

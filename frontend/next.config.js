@@ -1,13 +1,27 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {
+let nextConfig = {
+  distDir: 'build',
   experimental: {
     appDir: true,
   },
-  // rewrites: async () => [
-  //   { 
-  //     source: '/api/:path*', 
-  //     destination: 'http://localhost:8080/api/:path*' },
-  // ]
 
 }
+
+const env = process.env.NODE_ENV;
+
+if (env === 'development') {
+  nextConfig = {
+    distDir: 'build',
+    experimental: {
+      appDir: true,
+    },
+     rewrites: async () => [
+       { 
+         source: '/api/v0/:path*', 
+         destination: 'http://localhost/api/v0/:path*' },
+     ]
+  
+  }
+  }
+
 module.exports = nextConfig
