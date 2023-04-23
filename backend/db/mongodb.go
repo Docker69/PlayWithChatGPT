@@ -68,13 +68,9 @@ func init() {
 // Disconnect from MongoDB
 func Shutdown(ctx context.Context) error {
 
+	//Close the connection to MongoDB from either collection
 	if err := ChatsCollection.col.Database().Client().Disconnect(ctx); err != nil {
-		mylogger.Logger.Errorf("ChatsCollection: Error disconnecting from MongoDB. Err: %s", err)
-		return err
-	}
-
-	if err := HumansCollection.col.Database().Client().Disconnect(ctx); err != nil {
-		mylogger.Logger.Errorf("HumansCollection: Error disconnecting from MongoDB. Err: %s", err)
+		mylogger.Logger.Errorf("Error disconnecting from MongoDB. Err: %s", err)
 		return err
 	}
 

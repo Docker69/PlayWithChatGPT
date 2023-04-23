@@ -3,8 +3,7 @@ import { Box } from "@mui/material";
 import ChatMessages from "./ChatMessagesGrid";
 import { ChatContext } from "../context/ChatProvider";
 import { USER_ROLE } from "../global/ChatProviderConstants";
-import { CHAT_AVATAR } from "../global/GlobalSontants";
-import { log } from "console";
+import { CHAT_AVATAR } from "../global/GlobalContants";
 
 type GridChatMessagesType = {
   side: "left" | "right";
@@ -62,9 +61,9 @@ const ChatMainBox: FunctionComponent = () => {
 
   useEffect(() => {
     // Scroll to the bottom of the container after rendering.
-      BottomRef.current?.scrollIntoView({behavior: 'smooth'});
-  }, [bothMessages]);
-  
+    BottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [state.activeChatSession.messages]);
+
   state.activeChatSession.messages.map((message) => {
     //split message.content into array of strings by new line or carriage return
     let lines = message.content.split(/[\n\r]+/);
@@ -86,7 +85,12 @@ const ChatMainBox: FunctionComponent = () => {
   ];
 
   return (
-    <Box overflow="auto" style={{ maxHeight: '100%' }} height="100vh" justifySelf="flex-start">
+    <Box
+      overflow="auto"
+      style={{ maxHeight: "100%" }}
+      height="100vh"
+      justifySelf="flex-start"
+    >
       <div>
         {bothMessages.map((message, idx) => (
           <ChatMessages
