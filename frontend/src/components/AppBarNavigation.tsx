@@ -17,7 +17,7 @@ import React from "react";
 import { ChatContext } from "../context/ChatProvider";
 import { SET_DRAWER_STATE } from "../global/ChatProviderConstants";
 import { signOut } from "next-auth/react";
-
+import AccountCircleTwoToneIcon from '@mui/icons-material/AccountCircleTwoTone';
 interface UserMenuProps {
   settings: string[];
   anchorEl: HTMLElement | null;
@@ -149,7 +149,7 @@ const AppBarNavigation2: FunctionComponent = () => {
           <Box sx={{ flexGrow: 0 }} marginRight={2}>
             <Tooltip title="Open settings">
               <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
-                <Avatar alt="Remy Sharp" src="/static/images/avatar/2.jpg" />
+                <Avatar alt="Remy Sharp" src="/logoipsum-299.svg" />
               </IconButton>
             </Tooltip>
             <UserMenu

@@ -6,7 +6,7 @@ import { Box } from "@mui/material";
 import ChatMessages from "./ChatMessagesGrid";
 import { ChatContext } from "../context/ChatProvider";
 import { USER_ROLE } from "../global/ChatProviderConstants";
-import { CHAT_AVATAR } from "../global/GlobalSontants";
+import { CHAT_AVATAR } from "../global/GlobalContants";
 import { log } from "console";
 
 type GridChatMessagesType = {

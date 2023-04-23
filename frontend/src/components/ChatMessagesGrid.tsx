@@ -9,7 +9,7 @@ import {
 } from "@mui/material";
 import { useContext, useEffect } from "react";
 import { ChatContext } from "../context/ChatProvider";
-import { CHAT_AVATAR } from "../global/GlobalSontants";
+import { CHAT_AVATAR } from "../global/GlobalContants";
 
 interface ChatClasses {
   [key: string]: string;
