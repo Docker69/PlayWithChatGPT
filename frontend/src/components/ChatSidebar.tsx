@@ -14,10 +14,12 @@ import AddCommentIcon from "@mui/icons-material/AddComment";
 import ChatIcon from "@mui/icons-material/Chat";
 import {
   SET_DRAWER_STATE,
+  SET_INIT_SESSION_DIALOG_STATE,
   SET_NEW_CHAT_DIALOG_STATE,
 } from "../global/ChatProviderConstants";
 import NewChatDialog from "../dialogs/NewChatDialog";
 import { ChatContext } from "../context/ChatProvider";
+import IdentifyDialog from "../dialogs/IdentifyDialog";
 
 const ChatSidebar: FunctionComponent = () => {
   console.debug("ChatSidebar render");
@@ -50,7 +52,9 @@ const ChatSidebar: FunctionComponent = () => {
       "ChatSidebar useEffect, state.chatSessions: ",
       state.chatSessions
     );
-  }, [state.chatSessions]);
+    state.human.Id === "" &&
+      dispatch({ type: SET_INIT_SESSION_DIALOG_STATE, payload: true });
+  }, [dispatch,state.chatSessions,state.human.Id]);
 
   const drawer = (
     <div>
@@ -77,6 +81,7 @@ const ChatSidebar: FunctionComponent = () => {
         </ListItemButton>
       </List>
       <NewChatDialog />
+      <IdentifyDialog />
     </div>
   );
 

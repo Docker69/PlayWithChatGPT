@@ -9,14 +9,18 @@ import {
   SET_NEW_CHAT_DIALOG_STATE,
   SYSTEM_ROLE,
   SET_WAIT_RESPONSE_STATE,
+  SET_HUMAN,
+  SET_INIT_SESSION_DIALOG_STATE,
 } from "../global/ChatProviderConstants";
 
 const initialState: ChatStateType = {
   mobileDrawerOpen: false,
   chatDialogOpen: false,
   waitingForResponse: false,
+  initSessionOpen: false,
   chatSessions: [],
   activeChatSession: { id: "", role: "", messages: [] },
+  human: { Id: "", Name: "", NickName: "", ChatIds: [] },
 };
 
 export const ChatContext = createContext<{
@@ -50,9 +54,13 @@ const reducer = (state: ChatStateType, action: ChatActionType) => {
       return { ...state, mobileDrawerOpen: action.payload };
     case SET_NEW_CHAT_DIALOG_STATE:
       return { ...state, chatDialogOpen: action.payload };
-      case SET_WAIT_RESPONSE_STATE:
-        return { ...state, waitingForResponse: action.payload };
-      default:
+    case SET_WAIT_RESPONSE_STATE:
+      return { ...state, waitingForResponse: action.payload };
+    case SET_INIT_SESSION_DIALOG_STATE:
+      return { ...state, initSessionOpen: action.payload };
+    case SET_HUMAN:
+      return { ...state, human: action.payload };
+    default:
       return state;
   }
 };
@@ -64,15 +72,11 @@ const ChatProvider = ({ children }: { children: ReactNode }) => {
   const value = useMemo(
     () => ({
       state: state,
-      dispatch: dispatch
+      dispatch: dispatch,
     }),
     [state]
   );
-  return (
-    <ChatContext.Provider value={value}>
-      {children}
-    </ChatContext.Provider>
-  );
+  return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
 };
 
 export default ChatProvider;

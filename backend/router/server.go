@@ -99,7 +99,10 @@ func RunServer(key string) {
 	router.GET("/ping", handlePing)
 
 	// Init Chat API endpoint
-	router.POST("/api/init", handleInitChat)
+	router.POST("/api/init/session", handleInitSession)
+
+	// Init Chat API endpoint
+	router.POST("/api/init/chat", handleInitChat)
 
 	// post chat completion to API endpoint
 	router.POST("/api/send-completion", handleChatCompletion)

@@ -3,7 +3,7 @@ package router
 import (
 	"backend/chat"
 	mongodb "backend/db"
-	completionmodels "backend/models"
+	"backend/models"
 	mylogger "backend/utils"
 	"context"
 	"net/http"
@@ -22,13 +22,52 @@ func handlePing(c echo.Context) error {
 	})
 }
 
+func handleInitSession(c echo.Context) error {
+
+	// log a message using logrus logger
+	mylogger.Logger.Info("Received session init request")
+
+	// init request to empty JSON
+	reqBody := models.Human{}
+
+	if err := c.Bind(&reqBody); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "invalid request body",
+		})
+	}
+
+	//get nickname from request body
+	if reqBody.NickName == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "Empty nickname",
+		})
+	}
+
+	//find the user in the database
+	human, err := mongodb.HumansCollection.GetByNickname(context.TODO(), reqBody.NickName)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": err.Error(),
+		})
+	}
+
+	if human.Id == "" {
+		return c.JSON(http.StatusNotFound, map[string]string{
+			"error": "Not Found",
+		})
+	}
+	// return reqBody as json
+	return c.JSON(http.StatusOK, human)
+
+}
+
 func handleInitChat(c echo.Context) error {
 
 	// log a message using logrus logger
 	mylogger.Logger.Info("Received chat init request")
 
 	// get request body
-	reqBody := completionmodels.ChatCompletionRequestBody{}
+	reqBody := models.ChatCompletionRequestBody{}
 
 	if err := c.Bind(&reqBody); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
@@ -50,7 +89,7 @@ func handleChatCompletion(c echo.Context) error {
 	mylogger.Logger.Info("Received chat completion request")
 
 	// get request body
-	reqBody := completionmodels.ChatCompletionRequestBody{}
+	reqBody := models.ChatCompletionRequestBody{}
 
 	if err := c.Bind(&reqBody); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{

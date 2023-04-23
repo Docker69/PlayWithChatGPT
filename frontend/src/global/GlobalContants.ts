@@ -1,1 +1,1 @@
-export const CHAT_AVATAR = "/bot.svg";
+export const CHAT_AVATAR = "/logo50.svg";

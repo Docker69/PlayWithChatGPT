@@ -97,7 +97,12 @@ const StyledGrid = styled(Grid)(({ theme: { palette, spacing } }) => {
   };
 });
 
-const ChatMessagesGrid = ({ avatar, messages, side, last }: ChatMessagesProps) => {
+const ChatMessagesGrid = ({
+  avatar,
+  messages,
+  side,
+  last,
+}: ChatMessagesProps) => {
   const { state } = useContext(ChatContext);
 
   const attachClass = (index: number): string => {
@@ -148,7 +153,7 @@ const ChatMessagesGrid = ({ avatar, messages, side, last }: ChatMessagesProps) =
             <Avatar className={classes.avatar} src={CHAT_AVATAR} />
           </Grid>
           <Grid item xs={11}>
-          <LinearProgress 
+            <LinearProgress
               color="primary"
               variant="indeterminate"
               sx={{ height: 10, borderRadius: 5, margin: 1.5 }}
