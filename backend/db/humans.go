@@ -50,3 +50,34 @@ func (c *HumansCollectionType) UpdateChats(ctx context.Context, human *models.Hu
 
 	return nil
 }
+
+// get human by ID from DB
+func (c *HumansCollectionType) GetById(ctx context.Context, id string) (models.Human, error) {
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return models.Human{}, err
+	}
+
+	filter := bson.M{"_id": oid}
+	result := c.col.FindOne(ctx, filter)
+
+	var human models.Human
+	if err := result.Decode(&human); err != nil {
+		return models.Human{}, err
+	}
+
+	return human, nil
+}
+
+// get human by chat id
+func (c *HumansCollectionType) GetByChatId(ctx context.Context, chatId string) (models.Human, error) {
+	filter := bson.D{{Key: "chatids.id", Value: chatId}}
+	result := c.col.FindOne(ctx, filter)
+
+	var human models.Human
+	if err := result.Decode(&human); err != nil {
+		return human, err
+	}
+
+	return human, nil
+}

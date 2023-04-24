@@ -91,8 +91,9 @@ func StartConsoleChat(apiKey string) {
 	chat.Id = _id
 	fmt.Println("Chat ID: ", chat.Id)
 
-	//add chat id to human
-	humnan.ChatIds = append(humnan.ChatIds, chat.Id)
+	//Create ChatRecord with the chat id and role
+	chatRecord := models.ChatRecord{Id: chat.Id, Role: chat.Role}
+	humnan.ChatIds = append(humnan.ChatIds, chatRecord)
 	err = mongodb.HumansCollection.UpdateChats(context.Background(), &humnan)
 	if err != nil {
 		mylogger.Logger.Errorf("UpdateHumanChats error: %v\n", err)

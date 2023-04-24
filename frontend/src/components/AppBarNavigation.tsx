@@ -1,6 +1,6 @@
 "use client"
 
-import { FunctionComponent, useContext, useState } from "react";
+import { FunctionComponent, memo, useContext, useState } from "react";
 import {
   AppBar,
   Avatar,
@@ -17,7 +17,6 @@ import React from "react";
 import { ChatContext } from "../context/ChatProvider";
 import { SET_DRAWER_STATE } from "../global/ChatProviderConstants";
 import { signOut } from "next-auth/react";
-import AccountCircleTwoToneIcon from '@mui/icons-material/AccountCircleTwoTone';
 interface UserMenuProps {
   settings: string[];
   anchorEl: HTMLElement | null;
@@ -56,7 +55,10 @@ const UserMenu: FunctionComponent<UserMenuProps> = ({
 
 const settings = ["Profile", "Account", "Dashboard", "Logout"];
 
-const AppBarNavigation2: FunctionComponent = () => {
+const AppBarNavigation: FunctionComponent = () => {
+
+  console.debug("AppBarNavigation render");
+
   const [anchorElUser, setAnchorElUser] = useState<null | HTMLElement>(null);
 
   const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
@@ -164,4 +166,4 @@ const AppBarNavigation2: FunctionComponent = () => {
   );
 };
 
-export default AppBarNavigation2;
+export default AppBarNavigation;

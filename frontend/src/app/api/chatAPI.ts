@@ -72,6 +72,43 @@ export async function initChat(payload: ChatSession) {
   return { success, response };
 }
 
+// Get Chat Session from backend by id
+export async function getChatSession(id: string) {
+  //initialize return value as ChatSession type and set to payload
+  let response: ChatSession = {
+    id: "",
+    role: "",
+    humanId: "",
+    messages: [],
+  };
+  let success: boolean = false;
+
+  // Get the chat session from the backend server, use GET and id parameter
+  try {
+    const reply = await fetch(`${config.serverAddr}/api/v0/chat/${id}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
+    
+    // Handle only Status 200 responses from the server here otherwise throw an error
+    if (reply.status !== 200) {
+      throw new Error(`Responded with status ${reply.status}.`);
+    }
+    // Parse the response body as JSON
+    response = await reply.json();
+    success = true;
+    console.debug("Chat session received: ", response);
+  } catch (error: any) {
+    // Handle any errors that occur during the request here
+
+    console.error("Exception getting chat session, ", error.message);
+  }
+  // Return the chat session data
+  return { success, response };
+}
+
 export async function sendChatPrompt(payload: ChatSession) {
   //initialize return value as ChatSession type and set to payload
   let response: ChatSession = payload;
@@ -79,7 +116,7 @@ export async function sendChatPrompt(payload: ChatSession) {
 
   // Send the prompt data to the backend server
   try {
-    const reply = await fetch(`${config.serverAddr}/api/v0/send-completion`, {
+    const reply = await fetch(`${config.serverAddr}/api/v0/chat/completion`, {
       method: "POST",
       body: JSON.stringify(payload),
       headers: {

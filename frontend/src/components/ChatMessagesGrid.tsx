@@ -47,13 +47,14 @@ const classes: ChatClasses = {
 
 const StyledGrid = styled(Grid)(({ theme: { palette, spacing } }) => {
   const radius = spacing(2.5);
-  const size = spacing(4);
+  const width = spacing(6);
+  const height = spacing(3.5);
   const rightBgColor = palette.primary.main;
   // if you want the same as facebook messenger, use this color '#09f'
   return {
     [`& .${classes.avatar}`]: {
-      width: size,
-      height: size,
+      width: width,
+      height: height
     },
     [`& .${classes.msg}`]: {
       padding: spacing(1, 2),
@@ -127,7 +128,7 @@ const ChatMessagesGrid = ({
       >
         {side === "left" && (
           <Grid item>
-            <Avatar className={classes.avatar} src={avatar} />
+            <Avatar sx={{mt: 0.5, ml:0.5}} variant={"square"} className={classes.avatar} src={avatar} />
           </Grid>
         )}
         <Grid item xs={11}>

@@ -20,14 +20,15 @@ export type ChatMessages = {
 export type ChatSession = {
   id: string;
   role: string;
+  humanId: string;
   messages: ChatMessages[];
 };
 
 export type Human = {
-  Id: string;
-  Name: string;
-  NickName: string;
-  ChatIds: string[];
+  id: string;
+  name: string;
+  nickName: string;
+  chatIds: { id: string; role: string }[];
 };
 
 export type ChatStateType = {

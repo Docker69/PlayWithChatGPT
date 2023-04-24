@@ -1,6 +1,6 @@
 "use client"
 
-import { FunctionComponent, useContext, useEffect, useRef } from "react";
+import { FunctionComponent, memo, useContext, useEffect, useRef } from "react";
 import { Box } from "@mui/material";
 import ChatMessages from "./ChatMessagesGrid";
 import { ChatContext } from "../context/ChatProvider";

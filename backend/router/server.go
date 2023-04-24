@@ -104,8 +104,11 @@ func RunServer(key string) {
 	// Init Chat API endpoint
 	router.POST("/api/v0/init/chat", handleInitChat)
 
+	//get chat by id
+	router.GET("/api/v0/chat/:id", handleGetChatById)
+
 	// post chat completion to API endpoint
-	router.POST("/api/v0/send-completion", handleChatCompletion)
+	router.POST("/api/v0/chat/completion", handleChatCompletion)
 
 	// get all chats list
 	router.POST("/api/v0/getallchatslist", handleGetChatsList)

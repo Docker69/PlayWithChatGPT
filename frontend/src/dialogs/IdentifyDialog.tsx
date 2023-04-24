@@ -19,13 +19,13 @@ export default function IdentifyDialog() {
     //Send request to backend to initialize chat session
     console.info("Checking nickname");
     //init payload to empty human
-    const payload : Human = { Id: "", Name: "", ChatIds: [], NickName: nickName };
+    const payload : Human = { id: "", name: "", chatIds: [], nickName: nickName };
 
     //wait for initSession to return before dispatching
     initSession(payload).then(({success, response}) => {
       console.info("Response from initSession: ", {success, response});
       //TODO: handle the case where nickname not found to create new human
-      success && response.Id !== "" &&
+      success && response.id !== "" &&
         dispatch({ type: SET_HUMAN, payload: response });
     });
 

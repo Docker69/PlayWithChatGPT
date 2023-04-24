@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import Sidebar from "../components/ChatSidebar";
 import Main from "../components/ChatMainBox";
@@ -21,20 +21,19 @@ const muiTheme = createTheme({
   palette: {
     primary: grey,
     secondary: {
-      main: blueGrey[500]
+      main: blueGrey[500],
     },
-    mode: 'light',
+    mode: "light",
   },
 });
 
 export default function Home() {
-
-  return ( 
-      <StyledEngineProvider injectFirst>
-        <ThemeProvider theme={muiTheme}>
-          <CssBaseline />
+  return (
+    <StyledEngineProvider injectFirst>
+      <ThemeProvider theme={muiTheme}>
+        <CssBaseline />
+        <Box flexDirection="column" display="flex">
           <ChatProvider>
-          <Box flexDirection="column" display="flex">
             <AppBarNavigation />
             <Box display="flex" height="100vh">
               <Box sx={{ flexGrow: 0, display: { xs: "none", md: "flex" } }}>
@@ -53,9 +52,9 @@ export default function Home() {
                 <Footer />
               </Box>
             </Box>
-          </Box>
           </ChatProvider>
-        </ThemeProvider>
-      </StyledEngineProvider>
-  )
+        </Box>
+      </ThemeProvider>
+    </StyledEngineProvider>
+  );
 }

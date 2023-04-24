@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { FunctionComponent, useContext, useEffect } from "react";
+import { FunctionComponent, memo, useContext, useEffect, useState } from "react";
 import {
   Divider,
   Drawer,
@@ -13,6 +13,8 @@ import {
 import AddCommentIcon from "@mui/icons-material/AddComment";
 import ChatIcon from "@mui/icons-material/Chat";
 import {
+  Human,
+  SEND_CHAT_PROMPT,
   SET_DRAWER_STATE,
   SET_INIT_SESSION_DIALOG_STATE,
   SET_NEW_CHAT_DIALOG_STATE,
@@ -20,12 +22,15 @@ import {
 import NewChatDialog from "../dialogs/NewChatDialog";
 import { ChatContext } from "../context/ChatProvider";
 import IdentifyDialog from "../dialogs/IdentifyDialog";
+import React from "react";
+import { getChatSession } from "@/app/api/chatAPI";
+import { stat } from "fs";
 
 const ChatSidebar: FunctionComponent = () => {
-  console.debug("ChatSidebar render");
-
   const drawerWidth = 240;
   const { state, dispatch } = useContext(ChatContext);
+
+  console.debug("ChatSidebar render");
 
   // Set the state of the Mobile Drawer
   const setDrawerState = () => {
@@ -40,6 +45,18 @@ const ChatSidebar: FunctionComponent = () => {
     });
   };
 
+  const handleSetChatSession = (value: string | Human) => {
+          //wait for initSession to return before dispatching
+          const id = typeof value === "string" ? value : value.chatIds[0].id;
+          getChatSession(id).then(({success, response}) => {
+            console.info("Response from getChatSession: ", {success, response});
+            //TODO: handle the case where nickname not found to create new human
+            success && response.id !== "" &&
+              dispatch({ type: SEND_CHAT_PROMPT, payload: response });
+  });
+};
+
+
   useEffect(() => {
     console.log(
       "ChatSidebar useEffect, state.mobileDrawerOpen",
@@ -48,32 +65,34 @@ const ChatSidebar: FunctionComponent = () => {
   }, [state.mobileDrawerOpen]);
 
   useEffect(() => {
-    console.log(
-      "ChatSidebar useEffect, state.chatSessions: ",
-      state.chatSessions
-    );
-    state.human.Id === "" &&
+    console.debug("ChatSidebar useEffect");
+    state.human.id === "" &&
       dispatch({ type: SET_INIT_SESSION_DIALOG_STATE, payload: true });
-  }, [dispatch,state.chatSessions,state.human.Id]);
+
+    state.human.id !== "" && handleSetChatSession(state.human);
+  }, [state.human.id]);
 
   const drawer = (
     <div>
       <Toolbar />
       <Divider />
       <List>
-        {state.chatSessions.map((session) => (
+        {state.human.chatIds.map((chat) => (
           //if the session is active, set the active class
           <ListItemButton
-            key={session.id}
-            selected={session.id === state.activeChatSession.id}
+            key={chat.id}
+            selected={chat.id === state.activeChatSession.id}
+            //prevent click if waiting for response
+            disabled={state.waitingForResponse}
+            onClick={() => handleSetChatSession(chat.id)}
           >
             <ListItemIcon>
               <ChatIcon />
             </ListItemIcon>
-            <ListItemText primary={session.role} />
+            <ListItemText primary={chat.role} />
           </ListItemButton>
         ))}
-        <ListItemButton key="New Chat" onClick={openNewChatDialog}>
+        <ListItemButton key="New Chat" onClick={openNewChatDialog} disabled={state.waitingForResponse}>
           <ListItemIcon>
             <AddCommentIcon />
           </ListItemIcon>

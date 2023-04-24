@@ -19,8 +19,8 @@ const initialState: ChatStateType = {
   waitingForResponse: false,
   initSessionOpen: false,
   chatSessions: [],
-  activeChatSession: { id: "", role: "", messages: [] },
-  human: { Id: "", Name: "", NickName: "", ChatIds: [] },
+  activeChatSession: { id: "", role: "", humanId: "", messages: [] },
+  human: { id: "", name: "", nickName: "", chatIds: [{role: "", id: ""}] },
 };
 
 export const ChatContext = createContext<{
@@ -47,7 +47,7 @@ const reducer = (state: ChatStateType, action: ChatActionType) => {
       };
     }
     case SEND_CHAT_PROMPT: {
-      console.info(`${SEND_CHAT_PROMPT}: `, action.payload);
+      console.debug(`${SEND_CHAT_PROMPT}: `, action.payload);
       return { ...state, activeChatSession: action.payload };
     }
     case SET_DRAWER_STATE:
@@ -56,10 +56,12 @@ const reducer = (state: ChatStateType, action: ChatActionType) => {
       return { ...state, chatDialogOpen: action.payload };
     case SET_WAIT_RESPONSE_STATE:
       return { ...state, waitingForResponse: action.payload };
-    case SET_INIT_SESSION_DIALOG_STATE:
+    case SET_INIT_SESSION_DIALOG_STATE:{}
       return { ...state, initSessionOpen: action.payload };
-    case SET_HUMAN:
+    case SET_HUMAN:{
+      console.debug(`${SET_HUMAN}: `, action.payload);
       return { ...state, human: action.payload };
+    }
     default:
       return state;
   }

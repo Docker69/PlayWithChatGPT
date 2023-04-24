@@ -43,6 +43,24 @@ func (c *ChatsCollectionType) Insert(ctx context.Context, chat *models.ChatCompl
 	return id, nil
 }
 
+// get chat by ID from DB
+func (c *ChatsCollectionType) GetById(ctx context.Context, id string) (models.ChatCompletionRequestBody, error) {
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return models.ChatCompletionRequestBody{}, err
+	}
+
+	filter := bson.M{"_id": oid}
+	result := c.col.FindOne(ctx, filter)
+
+	var chat models.ChatCompletionRequestBody
+	if err := result.Decode(&chat); err != nil {
+		return models.ChatCompletionRequestBody{}, err
+	}
+
+	return chat, nil
+}
+
 // update chat in DB
 func (c *ChatsCollectionType) Update(ctx context.Context, chat *models.ChatCompletionRequestBody) error {
 	id, err := primitive.ObjectIDFromHex(chat.Id)

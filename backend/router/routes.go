@@ -8,8 +8,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"github.com/sashabaranov/go-openai"
 )
 
 func handlePing(c echo.Context) error {
@@ -75,11 +75,73 @@ func handleInitChat(c echo.Context) error {
 		})
 	}
 
-	// generate a random uuid
-	reqBody.Id = uuid.New().String()
+	// add the message to a list of messages
+	reqBody.Messages = append(reqBody.Messages, openai.ChatCompletionMessage{
+		Role:    openai.ChatMessageRoleSystem,
+		Content: reqBody.Role,
+	})
+
+	var err error = nil
+	//insert into DB the chat
+	reqBody.Id, err = mongodb.ChatsCollection.Insert(context.TODO(), &reqBody)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": err.Error(),
+		})
+	}
+
+	//find the human in the database
+	human, err := mongodb.HumansCollection.GetById(context.TODO(), reqBody.HumanId)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": err.Error(),
+		})
+	}
+
+	//add chat id and role to human
+	chatRecord := models.ChatRecord{
+		Id:   reqBody.Id,
+		Role: reqBody.Role,
+	}
+	human.ChatIds = append(human.ChatIds, chatRecord)
+
+	//update the human in the database
+	err = mongodb.HumansCollection.UpdateChats(context.TODO(), &human)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": err.Error(),
+		})
+	}
 
 	// return reqBody as json
 	return c.JSON(http.StatusOK, reqBody)
+
+}
+
+// get chat by is
+func handleGetChatById(c echo.Context) error {
+
+	// log a message using logrus logger
+	mylogger.Logger.Info("Received Get Chat request")
+
+	//get chat id from request
+	chatId := c.Param("id")
+
+	//find the chat in the database
+	chat, err := mongodb.ChatsCollection.GetById(context.TODO(), chatId)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": err.Error(),
+		})
+	}
+
+	if chat.Id == "" {
+		return c.JSON(http.StatusNotFound, map[string]string{
+			"error": "Not Found",
+		})
+	}
+	// return reqBody as json
+	return c.JSON(http.StatusOK, chat)
 
 }
 
@@ -107,6 +169,14 @@ func handleChatCompletion(c echo.Context) error {
 
 	//spread request body and replace Message with response
 	reqBody.Messages = resp
+
+	//update the chat in the database
+	err = mongodb.ChatsCollection.Update(context.TODO(), &reqBody)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error updating DB": err.Error(),
+		})
+	}
 
 	// return reqBody as json
 	return c.JSON(http.StatusOK, reqBody)
