@@ -21,7 +21,7 @@ import (
 const quitStr = "!quit"
 
 // StartConsoleChat starts an infinite loop that will keep asking for user input until !quit command is entered
-func StartConsoleChat(apiKey string) {
+func StartConsoleChat() {
 
 	mylogger.Logger.Info("New console chat started!")
 
@@ -37,7 +37,7 @@ func StartConsoleChat(apiKey string) {
 	text, _ := reader.ReadString('\n')
 	// replace CRLF with LF in the text
 	text = strings.Replace(text, "\n", "", -1)
-	humnan, err := mongodb.HumansCollection.GetByNickname(context.Background(), text)
+	humnan, err := mongodb.HumansCollection.GetByNickname(text)
 	if err != nil {
 		mylogger.Logger.Errorf("GetHumanByNickname error: %v\n", err)
 	}
@@ -60,7 +60,7 @@ func StartConsoleChat(apiKey string) {
 		text = strings.Replace(text, "\n", "", -1)
 		humnan.NickName = text
 		//insert human to db
-		_id, err := mongodb.HumansCollection.Insert(context.Background(), &humnan)
+		_id, err := mongodb.HumansCollection.Insert(&humnan)
 		if err != nil {
 			mylogger.Logger.Errorf("InsertHuman error: %v\n", err)
 			return
@@ -83,7 +83,7 @@ func StartConsoleChat(apiKey string) {
 	chat.Role = text
 
 	//pass the chat as pointer to the function
-	_id, err := mongodb.ChatsCollection.Insert(context.Background(), chat)
+	_id, err := mongodb.ChatsCollection.Insert(chat)
 	if err != nil {
 		mylogger.Logger.Errorf("InitNewChatDocument error: %v\n", err)
 	}
@@ -94,7 +94,7 @@ func StartConsoleChat(apiKey string) {
 	//Create ChatRecord with the chat id and role
 	chatRecord := models.ChatRecord{Id: chat.Id, Role: chat.Role}
 	humnan.ChatIds = append(humnan.ChatIds, chatRecord)
-	err = mongodb.HumansCollection.UpdateChats(context.Background(), &humnan)
+	err = mongodb.HumansCollection.UpdateChats(&humnan)
 	if err != nil {
 		mylogger.Logger.Errorf("UpdateHumanChats error: %v\n", err)
 	}
@@ -130,7 +130,7 @@ func StartConsoleChat(apiKey string) {
 		})
 
 		//Update the chat document in the database
-		err := mongodb.ChatsCollection.Update(context.Background(), chat)
+		err := mongodb.ChatsCollection.Update(chat)
 
 		if err != nil {
 			mylogger.Logger.WithField("UUID", chat.Id).Errorf("UpdateChat error: %v\n", err)
@@ -164,7 +164,7 @@ func StartConsoleChat(apiKey string) {
 		})
 
 		//Update the chat document in the database
-		err = mongodb.ChatsCollection.Update(context.Background(), chat)
+		err = mongodb.ChatsCollection.Update(chat)
 		if err != nil {
 			mylogger.Logger.WithField("UUID", chat.Id).Errorf("UpdateChat error: %v\n", err)
 			continue

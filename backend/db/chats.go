@@ -2,6 +2,7 @@ package mongodb
 
 import (
 	"context"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -10,7 +11,10 @@ import (
 )
 
 // get all chats from DB
-func (c *ChatsCollectionType) GetAll(ctx context.Context) ([]models.ChatCompletionRequestBody, error) {
+func (c *ChatsCollectionType) GetAll() ([]models.ChatCompletionRequestBody, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
 	cur, err := c.col.Find(ctx, bson.D{{}})
 	if err != nil {
 		return nil, err
@@ -33,7 +37,10 @@ func (c *ChatsCollectionType) GetAll(ctx context.Context) ([]models.ChatCompleti
 }
 
 // insert new chat in DB
-func (c *ChatsCollectionType) Insert(ctx context.Context, chat *models.ChatCompletionRequestBody) (string, error) {
+func (c *ChatsCollectionType) Insert(chat *models.ChatCompletionRequestBody) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
 	insertResult, err := c.col.InsertOne(ctx, chat)
 	if err != nil {
 		return "", err
@@ -44,7 +51,9 @@ func (c *ChatsCollectionType) Insert(ctx context.Context, chat *models.ChatCompl
 }
 
 // get chat by ID from DB
-func (c *ChatsCollectionType) GetById(ctx context.Context, id string) (models.ChatCompletionRequestBody, error) {
+func (c *ChatsCollectionType) GetById(id string) (models.ChatCompletionRequestBody, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	oid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return models.ChatCompletionRequestBody{}, err
@@ -62,7 +71,10 @@ func (c *ChatsCollectionType) GetById(ctx context.Context, id string) (models.Ch
 }
 
 // update chat in DB
-func (c *ChatsCollectionType) Update(ctx context.Context, chat *models.ChatCompletionRequestBody) error {
+func (c *ChatsCollectionType) Update(chat *models.ChatCompletionRequestBody) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
 	id, err := primitive.ObjectIDFromHex(chat.Id)
 	if err != nil {
 		return err
@@ -80,7 +92,10 @@ func (c *ChatsCollectionType) Update(ctx context.Context, chat *models.ChatCompl
 }
 
 // delete all chats from DB
-func (c *ChatsCollectionType) DeleteAll(ctx context.Context) (int64, error) {
+func (c *ChatsCollectionType) DeleteAll() (int64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
 	d, err := c.col.DeleteMany(ctx, bson.D{{}})
 	if err != nil {
 		return 0, err

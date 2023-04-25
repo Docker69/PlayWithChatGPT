@@ -2,6 +2,7 @@ package mongodb
 
 import (
 	"context"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -10,7 +11,10 @@ import (
 )
 
 // get human by nickname
-func (c *HumansCollectionType) GetByNickname(ctx context.Context, nickname string) (models.Human, error) {
+func (c *HumansCollectionType) GetByNickname(nickname string) (models.Human, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
 	filter := bson.D{{Key: "nickname", Value: nickname}}
 	result := c.col.FindOne(ctx, filter)
 
@@ -23,7 +27,10 @@ func (c *HumansCollectionType) GetByNickname(ctx context.Context, nickname strin
 }
 
 // insert human in DB
-func (c *HumansCollectionType) Insert(ctx context.Context, human *models.Human) (string, error) {
+func (c *HumansCollectionType) Insert(human *models.Human) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
 	insertResult, err := c.col.InsertOne(ctx, human)
 	if err != nil {
 		return "", err
@@ -34,7 +41,10 @@ func (c *HumansCollectionType) Insert(ctx context.Context, human *models.Human) 
 }
 
 // update human in DB by ID
-func (c *HumansCollectionType) UpdateChats(ctx context.Context, human *models.Human) error {
+func (c *HumansCollectionType) UpdateChats(human *models.Human) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
 	id, err := primitive.ObjectIDFromHex(human.Id)
 	if err != nil {
 		return err
@@ -52,7 +62,10 @@ func (c *HumansCollectionType) UpdateChats(ctx context.Context, human *models.Hu
 }
 
 // get human by ID from DB
-func (c *HumansCollectionType) GetById(ctx context.Context, id string) (models.Human, error) {
+func (c *HumansCollectionType) GetById(id string) (models.Human, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
 	oid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return models.Human{}, err
@@ -70,7 +83,10 @@ func (c *HumansCollectionType) GetById(ctx context.Context, id string) (models.H
 }
 
 // get human by chat id
-func (c *HumansCollectionType) GetByChatId(ctx context.Context, chatId string) (models.Human, error) {
+func (c *HumansCollectionType) GetByChatId(chatId string) (models.Human, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
 	filter := bson.D{{Key: "chatids.id", Value: chatId}}
 	result := c.col.FindOne(ctx, filter)
 

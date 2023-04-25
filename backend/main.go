@@ -12,10 +12,8 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// main function of the application
-func main() {
-	// get command line arguments
-	args := os.Args
+// init main package
+func init() {
 
 	// load the environment variables
 	err := godotenv.Load()
@@ -37,13 +35,14 @@ func main() {
 
 		mylogger.Logger.Infof("Setting log level to: %s", logLevelStr)
 	}
+	//log main init done
+	mylogger.Logger.Info("main package initialized")
+}
 
-	// extract and save the OpenAI api key from environment variables
-	apiKey, exists := os.LookupEnv("OPENAI_API_KEY")
-
-	if !exists {
-		mylogger.Logger.Panic("OpenAI API Key not found, panicking!!!")
-	}
+// main function of the application
+func main() {
+	// get command line arguments
+	args := os.Args
 
 	var frontend bool = false
 	// check command line arguments and compare them
@@ -55,9 +54,9 @@ func main() {
 
 	if frontend {
 		//start the server
-		router.RunServer(apiKey)
+		router.RunServer()
 	} else {
 		// start chat via console
-		chat.StartConsoleChat(apiKey)
+		chat.StartConsoleChat()
 	}
 }

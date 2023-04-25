@@ -13,7 +13,7 @@ db.createUser({
 });
 
 db.createCollection('chats')
-db.createCollection('config')
+db.createCollection('configs')
 db.createCollection('humans')
 
 print("============= Ended INIT script =======================");

@@ -5,7 +5,6 @@ import (
 	mongodb "backend/db"
 	"backend/models"
 	mylogger "backend/utils"
-	"context"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -44,7 +43,7 @@ func handleInitSession(c echo.Context) error {
 	}
 
 	//find the user in the database
-	human, err := mongodb.HumansCollection.GetByNickname(context.TODO(), reqBody.NickName)
+	human, err := mongodb.HumansCollection.GetByNickname(reqBody.NickName)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"error": err.Error(),
@@ -83,7 +82,7 @@ func handleInitChat(c echo.Context) error {
 
 	var err error = nil
 	//insert into DB the chat
-	reqBody.Id, err = mongodb.ChatsCollection.Insert(context.TODO(), &reqBody)
+	reqBody.Id, err = mongodb.ChatsCollection.Insert(&reqBody)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": err.Error(),
@@ -91,7 +90,7 @@ func handleInitChat(c echo.Context) error {
 	}
 
 	//find the human in the database
-	human, err := mongodb.HumansCollection.GetById(context.TODO(), reqBody.HumanId)
+	human, err := mongodb.HumansCollection.GetById(reqBody.HumanId)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"error": err.Error(),
@@ -106,7 +105,7 @@ func handleInitChat(c echo.Context) error {
 	human.ChatIds = append(human.ChatIds, chatRecord)
 
 	//update the human in the database
-	err = mongodb.HumansCollection.UpdateChats(context.TODO(), &human)
+	err = mongodb.HumansCollection.UpdateChats(&human)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": err.Error(),
@@ -128,7 +127,7 @@ func handleGetChatById(c echo.Context) error {
 	chatId := c.Param("id")
 
 	//find the chat in the database
-	chat, err := mongodb.ChatsCollection.GetById(context.TODO(), chatId)
+	chat, err := mongodb.ChatsCollection.GetById(chatId)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"error": err.Error(),
@@ -160,7 +159,7 @@ func handleChatCompletion(c echo.Context) error {
 	}
 
 	//Call the chat completion function and get the response, handle error
-	resp, err := chat.ChatCompletion(apiKey, reqBody)
+	resp, err := chat.ChatCompletion(reqBody)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"error": err.Error(),
@@ -171,7 +170,7 @@ func handleChatCompletion(c echo.Context) error {
 	reqBody.Messages = resp
 
 	//update the chat in the database
-	err = mongodb.ChatsCollection.Update(context.TODO(), &reqBody)
+	err = mongodb.ChatsCollection.Update(&reqBody)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"error updating DB": err.Error(),
@@ -189,7 +188,7 @@ func handleGetChatsList(c echo.Context) error {
 	mylogger.Logger.Info("Received Get All Chats request")
 
 	//Call the chat completion function and get the response, handle error
-	resBody, err := mongodb.ChatsCollection.GetAll(context.TODO())
+	resBody, err := mongodb.ChatsCollection.GetAll()
 
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{

@@ -14,6 +14,7 @@ import (
 
 var ChatsCollection *ChatsCollectionType = nil
 var HumansCollection *HumansCollectionType = nil
+var ConfigsCollection *ConfigsCollectionType = nil
 
 var envVars = [...]string{"MONGO_HOST", "MONGO_PORT", "MONGO_USER_NAME", "MONGO_USER_PASSWORD", "MONGO_DATABASE"}
 
@@ -61,6 +62,7 @@ func init() {
 
 	ChatsCollection = NewChatsCollection(client.Database(env["MONGO_DATABASE"]).Collection("chats"))
 	HumansCollection = NewHumansCollection(client.Database(env["MONGO_DATABASE"]).Collection("humans"))
+	ConfigsCollection = NewConfigsCollection(client.Database(env["MONGO_DATABASE"]).Collection("configs"))
 
 	mylogger.Logger.Info("MongoDB collections initialized!")
 }

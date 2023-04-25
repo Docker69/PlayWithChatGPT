@@ -17,17 +17,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var apiKey = ""
-
 // init Server
 func init() {
 }
 
 // run server function
-func RunServer(key string) {
-
-	//set the OpenAI api key
-	apiKey = key
+func RunServer() {
 
 	//get port from env
 	port, exists := os.LookupEnv("LISTEN_PORT")
