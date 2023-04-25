@@ -1,6 +1,12 @@
 "use client";
 
-import { FunctionComponent, memo, useContext, useEffect, useState } from "react";
+import {
+  FunctionComponent,
+  memo,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import {
   Divider,
   Drawer,
@@ -46,16 +52,16 @@ const ChatSidebar: FunctionComponent = () => {
   };
 
   const handleSetChatSession = (value: string | Human) => {
-          //wait for initSession to return before dispatching
-          const id = typeof value === "string" ? value : value.chatIds[0].id;
-          getChatSession(id).then(({success, response}) => {
-            console.info("Response from getChatSession: ", {success, response});
-            //TODO: handle the case where nickname not found to create new human
-            success && response.id !== "" &&
-              dispatch({ type: SEND_CHAT_PROMPT, payload: response });
-  });
-};
-
+    //wait for initSession to return before dispatching
+    const id = typeof value === "string" ? value : value.chatIds[0].id;
+    getChatSession(id).then(({ success, response }) => {
+      console.info("Response from getChatSession: ", { success, response });
+      //TODO: handle the case where nickname not found to create new human
+      success &&
+        response.id !== "" &&
+        dispatch({ type: SEND_CHAT_PROMPT, payload: response });
+    });
+  };
 
   useEffect(() => {
     console.log(
@@ -76,7 +82,7 @@ const ChatSidebar: FunctionComponent = () => {
     <div>
       <Toolbar />
       <Divider />
-      <List>
+      <List dense={true} disablePadding>
         {state.human.chatIds.map((chat) => (
           //if the session is active, set the active class
           <ListItemButton
@@ -86,13 +92,24 @@ const ChatSidebar: FunctionComponent = () => {
             disabled={state.waitingForResponse}
             onClick={() => handleSetChatSession(chat.id)}
           >
-            <ListItemIcon>
+            <ListItemIcon sx={{ color: "inherit" }}>
               <ChatIcon />
             </ListItemIcon>
-            <ListItemText primary={chat.role} />
+            <ListItemText
+              primary={chat.role}
+              primaryTypographyProps={{
+                noWrap: true,
+                fontSize: 14,
+                fontWeight: "medium",
+              }}
+            />
           </ListItemButton>
         ))}
-        <ListItemButton key="New Chat" onClick={openNewChatDialog} disabled={state.waitingForResponse}>
+        <ListItemButton
+          key="New Chat"
+          onClick={openNewChatDialog}
+          disabled={state.waitingForResponse}
+        >
           <ListItemIcon>
             <AddCommentIcon />
           </ListItemIcon>

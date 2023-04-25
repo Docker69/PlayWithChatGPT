@@ -85,6 +85,7 @@ func (c *ConfigsCollectionType) Update(config *models.OpenAIConfig) error {
 			"name":              config.Name,
 			"description":       config.Desc,
 			"model":             config.Model,
+			"suffix":            config.Suffix,
 			"max_tokens":        config.MaxTokens,
 			"temperature":       config.Temperature,
 			"top_p":             config.TopP,
