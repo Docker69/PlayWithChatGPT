@@ -1,4 +1,4 @@
-package chat
+package ai
 
 // import gin framework
 import (

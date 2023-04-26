@@ -47,6 +47,8 @@ services:
     image: ${DOCKER_USER:-noname}/playwithchatgpt-api:${API_TAG:-latest}
     ports:
       - 8080:8080
+    volumes:
+      - api-workspace:/app/workspace
     environment:
       MONGO_DATABASE: ${MONGO_DATABASE:-PlayWithChatGPT}
       MONGO_PORT: ${MONGO_PORT:-27017}
@@ -81,4 +83,6 @@ volumes:
   mongodb-config:
     driver: local
   redis-data:
+    driver: local
+  api-workspace:
     driver: local

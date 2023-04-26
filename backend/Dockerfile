@@ -21,12 +21,13 @@ RUN go build -ldflags '-w -s' -a -o ./serverBuild ./
 # Build a small image
 FROM alpine
 
-# Move to / directory
+#create local directory for workspace
+WORKDIR /app/workspace
+# Move to /app directory
 WORKDIR /app
 # Copy binary from build to main folder
 COPY .env .
 COPY --from=builder /build/serverBuild ./server
-
 # Export necessary port
 EXPOSE 8080
 

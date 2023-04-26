@@ -1,7 +1,7 @@
 package router
 
 import (
-	"backend/chat"
+	"backend/ai"
 	"backend/db/mongodb"
 	"backend/models"
 	"backend/utils"
@@ -159,7 +159,7 @@ func handleChatCompletion(c echo.Context) error {
 	}
 
 	//Call the chat completion function and get the response, handle error
-	resp, err := chat.ChatCompletion(reqBody)
+	resp, err := ai.ChatCompletion(reqBody)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"error": err.Error(),
