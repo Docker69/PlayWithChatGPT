@@ -9,7 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	mylogger "backend/utils"
+	"backend/utils"
 )
 
 var ChatsCollection *ChatsCollectionType = nil
@@ -23,7 +23,7 @@ func init() {
 	// load the environment variables
 	err := godotenv.Load()
 	if err != nil {
-		mylogger.Logger.Panicf("Error loading .env file. Err: %s", err)
+		utils.Logger.Panicf("Error loading .env file. Err: %s", err)
 	}
 
 	// get env variables
@@ -32,7 +32,7 @@ func init() {
 	for _, v := range envVars {
 		env[v], exists = os.LookupEnv(v)
 		if !exists {
-			mylogger.Logger.Panic(v + " not found, panicking!!!")
+			utils.Logger.Panic(v + " not found, panicking!!!")
 		}
 	}
 	//Build the connection string
@@ -48,23 +48,23 @@ func init() {
 	client, err := mongo.Connect(ctx, clientOptions)
 
 	if err != nil {
-		mylogger.Logger.Fatalf("Error connecting to MongoDB. Err: %s, connStr: %s", err, connStr)
+		utils.Logger.Fatalf("Error connecting to MongoDB. Err: %s, connStr: %s", err, connStr)
 	}
 
 	// Check the connection
 	err = client.Ping(context.TODO(), nil)
 
 	if err != nil {
-		mylogger.Logger.Fatalf("Error pinging MongoDB. Err: %s", err)
+		utils.Logger.Fatalf("Error pinging MongoDB. Err: %s", err)
 	}
 
-	mylogger.Logger.Info("Connected to MongoDB!")
+	utils.Logger.Info("Connected to MongoDB!")
 
 	ChatsCollection = NewChatsCollection(client.Database(env["MONGO_DATABASE"]).Collection("chats"))
 	HumansCollection = NewHumansCollection(client.Database(env["MONGO_DATABASE"]).Collection("humans"))
 	ConfigsCollection = NewConfigsCollection(client.Database(env["MONGO_DATABASE"]).Collection("configs"))
 
-	mylogger.Logger.Info("MongoDB collections initialized!")
+	utils.Logger.Info("MongoDB collections initialized!")
 }
 
 // Disconnect from MongoDB
@@ -72,10 +72,10 @@ func Shutdown(ctx context.Context) error {
 
 	//Close the connection to MongoDB from either collection
 	if err := ChatsCollection.col.Database().Client().Disconnect(ctx); err != nil {
-		mylogger.Logger.Errorf("Error disconnecting from MongoDB. Err: %s", err)
+		utils.Logger.Errorf("Error disconnecting from MongoDB. Err: %s", err)
 		return err
 	}
 
-	mylogger.Logger.Info("Connection to MongoDB closed.")
+	utils.Logger.Info("Connection to MongoDB closed.")
 	return nil
 }

@@ -1,5 +1,25 @@
 version: '3'
 services:
+# Redis - Key-value Store
+  redis:
+    container_name: redis
+    image: redis/redis-stack-server:latest
+    restart: always
+    environment:
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redispassword}
+
+    entrypoint: redis-server --appendonly yes --requirepass $REDIS_PASSWORD --maxmemory 512mb --maxmemory-policy allkeys-lru 
+      --loadmodule /opt/redis-stack/lib/redisearch.so 
+      --loadmodule /opt/redis-stack/lib/rejson.so
+    networks:
+      - api-network
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
   mongodb:
     image: mongo:latest
     container_name: ChatGPTDb
@@ -37,6 +57,7 @@ services:
       - api-network
     depends_on:
       - mongodb
+      - redis
   web:
     build:
       context: ./frontend
@@ -58,4 +79,6 @@ volumes:
   mongodb-log:
     driver: local
   mongodb-config:
+    driver: local
+  redis-data:
     driver: local

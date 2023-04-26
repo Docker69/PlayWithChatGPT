@@ -2,8 +2,9 @@ package chat
 
 // import gin framework
 import (
+	redisclient "backend/db/redis"
 	"backend/models"
-	mylogger "backend/utils"
+	"backend/utils"
 	"context"
 	"encoding/json"
 	"errors"
@@ -18,14 +19,14 @@ var client *openai.Client = nil
 
 // init the chat package
 func init() {
-	mylogger.Logger.Info("Init Chat Package")
+	utils.Logger.Info("Init Chat Package")
 
 	// extract and save the OpenAI api key from environment variables
 	exists := false
 	apiKey, exists = os.LookupEnv("OPENAI_API_KEY")
 
 	if !exists {
-		mylogger.Logger.Panic("OpenAI API Key not found, panicking!!!")
+		utils.Logger.Panic("OpenAI API Key not found, panicking!!!")
 	}
 
 	currentConfig = models.NewOpenAIConfig()
@@ -36,33 +37,44 @@ func init() {
 
 	//check that client  is not nil
 	if client == nil {
-		mylogger.Logger.Panic("OpenAI Client is nil, panicking!!!")
+		utils.Logger.Panic("OpenAI Client is nil, panicking!!!")
 		return
 	}
 
-	mylogger.Logger.Info("Chat Package Initialized")
+	utils.Logger.Info("Chat Package Initialized")
+
+	jsonBytes, _ := json.Marshal(currentConfig)
+	err := redisclient.SetJson("chat_config", ".", string(jsonBytes))
+	if err != nil {
+		utils.Logger.Error("Error setting chat config in redis,  error: ", err)
+	}
 }
 
 // ChatCompletion function is the main function of the chat package
 func ChatCompletion(reqBody models.ChatCompletionRequestBody) ([]openai.ChatCompletionMessage, error) {
-	mylogger.Logger.WithField("UUID", reqBody.Id).Info("Chat Completion Request")
+	utils.Logger.WithField("UUID", reqBody.Id).Info("Chat Completion Request")
 
+	numTokens := utils.NumTokensFromMessages(reqBody.Messages, currentConfig.Model)
+	//TODO read token limit from .env file
+	allowedTokens := 4000 - numTokens
+	utils.Logger.WithField("UUID", reqBody.Id).Debugf("Allowed Tokens for response: %d", allowedTokens)
 	// call OpenAI API to generate response to the user's message
 	resp, err := client.CreateChatCompletion(
 		context.Background(),
 		openai.ChatCompletionRequest{
-			Model:    currentConfig.Model,
-			Messages: reqBody.Messages,
+			Model:     currentConfig.Model,
+			Messages:  reqBody.Messages,
+			MaxTokens: allowedTokens,
 		},
 	)
 
 	if err != nil {
-		mylogger.Logger.WithField("UUID", reqBody.Id).Errorf("ChatCompletion error: %v\n", err)
+		utils.Logger.WithField("UUID", reqBody.Id).Errorf("ChatCompletion error: %v\n", err)
 		return nil, err
 	}
 
 	if len(resp.Choices) == 0 {
-		mylogger.Logger.WithField("UUID", reqBody.Id).Error("Empty response from OpenAI CreateChatCompletion API")
+		utils.Logger.WithField("UUID", reqBody.Id).Error("Empty response from OpenAI CreateChatCompletion API")
 		return nil, errors.New("empty response from OpenAI CreateChatCompletion API")
 	}
 
@@ -75,15 +87,15 @@ func ChatCompletion(reqBody models.ChatCompletionRequestBody) ([]openai.ChatComp
 		Content: content,
 	})
 
-	mylogger.Logger.WithField("UUID", reqBody.Id).Debugf("Model: %s", resp.Model)
+	utils.Logger.WithField("UUID", reqBody.Id).Debugf("Model: %s", resp.Model)
 
 	jsonStr, _ := json.Marshal(reqBody.Messages)
-	mylogger.Logger.WithField("UUID", reqBody.Id).Debugf("Messages: %s", jsonStr)
+	utils.Logger.WithField("UUID", reqBody.Id).Debugf("Messages: %s", jsonStr)
 
 	jsonStr, _ = json.Marshal(resp.Usage)
-	mylogger.Logger.WithField("UUID", reqBody.Id).Debugf("Tokens: %s", jsonStr)
+	utils.Logger.WithField("UUID", reqBody.Id).Debugf("Tokens: %s", jsonStr)
 
-	mylogger.Logger.WithField("UUID", reqBody.Id).Info("Chat Completion Ended!")
+	utils.Logger.WithField("UUID", reqBody.Id).Info("Chat Completion Ended!")
 
 	return reqBody.Messages, nil
 }

@@ -1,8 +1,8 @@
 package router
 
 import (
-	mongodb "backend/db"
-	mylogger "backend/utils"
+	"backend/db/mongodb"
+	"backend/utils"
 	"context"
 	"fmt"
 	"net/http"
@@ -28,7 +28,7 @@ func RunServer() {
 	port, exists := os.LookupEnv("LISTEN_PORT")
 
 	if !exists {
-		mylogger.Logger.Warn("LISTEN_PORT not defined in env, using default port 8080")
+		utils.Logger.Warn("LISTEN_PORT not defined in env, using default port 8080")
 		port = "8080"
 	}
 
@@ -43,7 +43,7 @@ func RunServer() {
 		LogURI:    true,
 		LogStatus: true,
 		LogValuesFunc: func(c echo.Context, values middleware.RequestLoggerValues) error {
-			mylogger.Logger.WithFields(logrus.Fields{
+			utils.Logger.WithFields(logrus.Fields{
 				"uri":    values.URI,
 				"status": values.Status,
 				"method": values.Method,
@@ -63,7 +63,7 @@ func RunServer() {
 			}
 
 			// log the response
-			mylogger.Logger.WithFields(logrus.Fields{
+			utils.Logger.WithFields(logrus.Fields{
 				"status": c.Response().Status,
 				"method": c.Request().Method,
 				"uri":    c.Request().RequestURI,
@@ -125,7 +125,7 @@ func RunServer() {
 	// it won't block the graceful shutdown handling below
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			mylogger.Logger.Fatalf("listen: %s", err.Error())
+			utils.Logger.Fatalf("listen: %s", err.Error())
 		}
 	}()
 
@@ -137,7 +137,7 @@ func RunServer() {
 	// kill -9 is syscall.SIGKILL but can't be catch, so don't need add it
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	mylogger.Logger.Info("Shutting down server...")
+	utils.Logger.Info("Shutting down server...")
 
 	// The context is used to inform the server it has 20 seconds to finish
 	// the request it is currently handling
@@ -147,20 +147,20 @@ func RunServer() {
 	if err := server.Shutdown(ctx); err != nil {
 		if ctx.Err() != nil {
 			// context already cancelled
-			mylogger.Logger.Info("Server shutdown cancelled")
+			utils.Logger.Info("Server shutdown cancelled")
 			return
 		}
-		mylogger.Logger.Fatalf("Server forced to shutdown: %s", err.Error())
+		utils.Logger.Fatalf("Server forced to shutdown: %s", err.Error())
 	}
 
 	if err := mongodb.Shutdown(ctx); err != nil {
 		if ctx.Err() != nil {
 			// context already cancelled
-			mylogger.Logger.Info("MongoDB shutdown cancelled")
+			utils.Logger.Info("MongoDB shutdown cancelled")
 			return
 		}
-		mylogger.Logger.Fatalf("MongoDB forced to shutdown: %s", err.Error())
+		utils.Logger.Fatalf("MongoDB forced to shutdown: %s", err.Error())
 	}
 
-	mylogger.Logger.Info("Server exiting")
+	utils.Logger.Info("Server exiting")
 }

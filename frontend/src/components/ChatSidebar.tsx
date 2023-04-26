@@ -2,7 +2,6 @@
 
 import {
   FunctionComponent,
-  memo,
   useContext,
   useEffect,
   useState,
@@ -30,7 +29,6 @@ import { ChatContext } from "../context/ChatProvider";
 import IdentifyDialog from "../dialogs/IdentifyDialog";
 import React from "react";
 import { getChatSession } from "@/app/api/chatAPI";
-import { stat } from "fs";
 
 const ChatSidebar: FunctionComponent = () => {
   const drawerWidth = 240;
@@ -57,18 +55,11 @@ const ChatSidebar: FunctionComponent = () => {
     getChatSession(id).then(({ success, response }) => {
       console.info("Response from getChatSession: ", { success, response });
       //TODO: handle the case where nickname not found to create new human
-      success &&
+      success && 
         response.id !== "" &&
         dispatch({ type: SEND_CHAT_PROMPT, payload: response });
     });
   };
-
-  useEffect(() => {
-    console.log(
-      "ChatSidebar useEffect, state.mobileDrawerOpen",
-      state.mobileDrawerOpen
-    );
-  }, [state.mobileDrawerOpen]);
 
   useEffect(() => {
     console.debug("ChatSidebar useEffect");

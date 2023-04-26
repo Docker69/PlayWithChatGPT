@@ -1,6 +1,6 @@
 // logger.go
 
-package pwcglogger
+package utils
 
 import (
 	"io"

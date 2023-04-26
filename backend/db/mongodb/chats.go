@@ -7,7 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	models "backend/models"
+	"backend/models"
 )
 
 // get all chats from DB

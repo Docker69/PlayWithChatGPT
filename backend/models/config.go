@@ -22,7 +22,7 @@ type OpenAIConfig struct {
 	User             string         `json:"user,omitempty" bson:"user,omitempty"`                           //The user to assign to the completion.
 }
 
-// create default struct for OpenAIConfig that accepts API key and instantiates OpenAIConfig with openai.DefaultConfig
+// create default struct for OpenAIConfig that instantiates OpenAIConfig with openai.DefaultConfig
 func NewOpenAIConfig() OpenAIConfig {
 	return OpenAIConfig{
 		Id:    "",

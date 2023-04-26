@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	mongodb "backend/db"
-	models "backend/models"
-	mylogger "backend/utils"
+	"backend/db/mongodb"
+	"backend/models"
+	"backend/utils"
 
 	"github.com/sashabaranov/go-openai"
 	"github.com/sirupsen/logrus"
@@ -23,7 +23,7 @@ const quitStr = "!quit"
 // StartConsoleChat starts an infinite loop that will keep asking for user input until !quit command is entered
 func StartConsoleChat() {
 
-	mylogger.Logger.Info("New console chat started!")
+	utils.Logger.Info("New console chat started!")
 
 	//declare pointer to chat struct and initialize it
 	var chat *models.ChatCompletionRequestBody = new(models.ChatCompletionRequestBody)
@@ -39,12 +39,12 @@ func StartConsoleChat() {
 	text = strings.Replace(text, "\n", "", -1)
 	humnan, err := mongodb.HumansCollection.GetByNickname(text)
 	if err != nil {
-		mylogger.Logger.Errorf("GetHumanByNickname error: %v\n", err)
+		utils.Logger.Errorf("GetHumanByNickname error: %v\n", err)
 	}
 
 	//check if human exists
 	if humnan.Id == "" {
-		mylogger.Logger.Infof("Human with nickname %s not found!\n", text)
+		utils.Logger.Infof("Human with nickname %s not found!\n", text)
 		//ask for human name
 		fmt.Print("Enter your name -> ")
 		// read input from console
@@ -62,7 +62,7 @@ func StartConsoleChat() {
 		//insert human to db
 		_id, err := mongodb.HumansCollection.Insert(&humnan)
 		if err != nil {
-			mylogger.Logger.Errorf("InsertHuman error: %v\n", err)
+			utils.Logger.Errorf("InsertHuman error: %v\n", err)
 			return
 		}
 		humnan.Id = _id
@@ -85,7 +85,7 @@ func StartConsoleChat() {
 	//pass the chat as pointer to the function
 	_id, err := mongodb.ChatsCollection.Insert(chat)
 	if err != nil {
-		mylogger.Logger.Errorf("InitNewChatDocument error: %v\n", err)
+		utils.Logger.Errorf("InitNewChatDocument error: %v\n", err)
 	}
 
 	chat.Id = _id
@@ -96,10 +96,10 @@ func StartConsoleChat() {
 	humnan.ChatIds = append(humnan.ChatIds, chatRecord)
 	err = mongodb.HumansCollection.UpdateChats(&humnan)
 	if err != nil {
-		mylogger.Logger.Errorf("UpdateHumanChats error: %v\n", err)
+		utils.Logger.Errorf("UpdateHumanChats error: %v\n", err)
 	}
 
-	mylogger.Logger.WithFields(
+	utils.Logger.WithFields(
 		logrus.Fields{
 			"role": text,
 			"UUID": _id,
@@ -133,7 +133,7 @@ func StartConsoleChat() {
 		err := mongodb.ChatsCollection.Update(chat)
 
 		if err != nil {
-			mylogger.Logger.WithField("UUID", chat.Id).Errorf("UpdateChat error: %v\n", err)
+			utils.Logger.WithField("UUID", chat.Id).Errorf("UpdateChat error: %v\n", err)
 			continue
 		}
 
@@ -150,7 +150,7 @@ func StartConsoleChat() {
 		)
 
 		if err != nil {
-			mylogger.Logger.WithField("UUID", _id).Errorf("ChatCompletion error: %v\n", err)
+			utils.Logger.WithField("UUID", _id).Errorf("ChatCompletion error: %v\n", err)
 			continue
 		}
 
@@ -166,20 +166,20 @@ func StartConsoleChat() {
 		//Update the chat document in the database
 		err = mongodb.ChatsCollection.Update(chat)
 		if err != nil {
-			mylogger.Logger.WithField("UUID", chat.Id).Errorf("UpdateChat error: %v\n", err)
+			utils.Logger.WithField("UUID", chat.Id).Errorf("UpdateChat error: %v\n", err)
 			continue
 		}
 
 		// print the generated response to console
 		fmt.Println(content)
 
-		mylogger.Logger.WithField("UUID", _id).Debugf("Model: %s", resp.Model)
+		utils.Logger.WithField("UUID", _id).Debugf("Model: %s", resp.Model)
 
 		jsonStr, _ := json.Marshal(chat.Messages)
-		mylogger.Logger.WithField("UUID", _id).Debugf("Messages: %s", jsonStr)
+		utils.Logger.WithField("UUID", _id).Debugf("Messages: %s", jsonStr)
 
 		jsonStr, _ = json.Marshal(resp.Usage)
-		mylogger.Logger.WithField("UUID", _id).Debugf("Tokens: %s", jsonStr)
+		utils.Logger.WithField("UUID", _id).Debugf("Tokens: %s", jsonStr)
 	}
 	reader.Reset(os.Stdin)
 
@@ -191,11 +191,11 @@ func StartConsoleChat() {
 	if err := mongodb.Shutdown(ctx); err != nil {
 		if ctx.Err() != nil {
 			// context already cancelled
-			mylogger.Logger.Info("MongoDB shutdown cancelled")
+			utils.Logger.Info("MongoDB shutdown cancelled")
 			return
 		}
-		mylogger.Logger.Fatalf("MongoDB forced to shutdown: %s", err.Error())
+		utils.Logger.Fatalf("MongoDB forced to shutdown: %s", err.Error())
 	}
 
-	mylogger.Logger.WithField("UUID", _id).Info("Console Chat Ended!")
+	utils.Logger.WithField("UUID", _id).Info("Console Chat Ended!")
 }

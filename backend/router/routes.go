@@ -2,9 +2,9 @@ package router
 
 import (
 	"backend/chat"
-	mongodb "backend/db"
+	"backend/db/mongodb"
 	"backend/models"
-	mylogger "backend/utils"
+	"backend/utils"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -14,7 +14,7 @@ import (
 func handlePing(c echo.Context) error {
 
 	// log a message using logrus logger
-	mylogger.Logger.Info("Received request")
+	utils.Logger.Info("Received request")
 
 	return c.JSON(http.StatusOK, map[string]string{
 		"message": "pong",
@@ -24,7 +24,7 @@ func handlePing(c echo.Context) error {
 func handleInitSession(c echo.Context) error {
 
 	// log a message using logrus logger
-	mylogger.Logger.Info("Received session init request")
+	utils.Logger.Info("Received session init request")
 
 	// init request to empty JSON
 	reqBody := models.Human{}
@@ -63,7 +63,7 @@ func handleInitSession(c echo.Context) error {
 func handleInitChat(c echo.Context) error {
 
 	// log a message using logrus logger
-	mylogger.Logger.Info("Received chat init request")
+	utils.Logger.Info("Received chat init request")
 
 	// get request body
 	reqBody := models.ChatCompletionRequestBody{}
@@ -121,7 +121,7 @@ func handleInitChat(c echo.Context) error {
 func handleGetChatById(c echo.Context) error {
 
 	// log a message using logrus logger
-	mylogger.Logger.Info("Received Get Chat request")
+	utils.Logger.Info("Received Get Chat request")
 
 	//get chat id from request
 	chatId := c.Param("id")
@@ -147,7 +147,7 @@ func handleGetChatById(c echo.Context) error {
 func handleChatCompletion(c echo.Context) error {
 
 	// log a message using logrus logger
-	mylogger.Logger.Info("Received chat completion request")
+	utils.Logger.Info("Received chat completion request")
 
 	// get request body
 	reqBody := models.ChatCompletionRequestBody{}
@@ -185,7 +185,7 @@ func handleChatCompletion(c echo.Context) error {
 func handleGetChatsList(c echo.Context) error {
 
 	// log a message using logrus logger
-	mylogger.Logger.Info("Received Get All Chats request")
+	utils.Logger.Info("Received Get All Chats request")
 
 	//Call the chat completion function and get the response, handle error
 	resBody, err := mongodb.ChatsCollection.GetAll()
