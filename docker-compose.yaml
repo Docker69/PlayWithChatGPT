@@ -39,7 +39,6 @@ services:
       - mongodb-data:/data/db
       - mongodb-log:/var/log/mongodb
       - mongodb-config:/data/configdb
-
   api:
     build:
       context: ./backend
@@ -50,11 +49,15 @@ services:
     volumes:
       - api-workspace:/app/workspace
     environment:
+      LOG_LEVEL: ${LOG_LEVEL}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
       MONGO_DATABASE: ${MONGO_DATABASE:-PlayWithChatGPT}
       MONGO_PORT: ${MONGO_PORT:-27017}
       MONGO_HOST: ${MONGO_HOST:-mongodb}
       MONGO_USER_NAME: ${MONGO_USER_NAME:-mongouser}
       MONGO_USER_PASSWORD: ${MONGO_USER_PASSWORD:-mongouserpass}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redispassword}
     networks: 
       - api-network
     depends_on:

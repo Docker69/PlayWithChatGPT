@@ -17,7 +17,7 @@ func init() {
 	// load the environment variables
 	err := godotenv.Load()
 	if err != nil {
-		utils.Logger.Panicf("Error loading .env file. Err: %s", err)
+		utils.Logger.Infof("Error loading .env file, will use default values. Err: %s", err)
 	}
 
 	//get port from env

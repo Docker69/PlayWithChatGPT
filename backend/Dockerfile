@@ -25,8 +25,9 @@ FROM alpine
 WORKDIR /app/workspace
 # Move to /app directory
 WORKDIR /app
+#no need to copy .env, env variables will be loaded from docker-compose
+#COPY .env .
 # Copy binary from build to main folder
-COPY .env .
 COPY --from=builder /build/serverBuild ./server
 # Export necessary port
 EXPOSE 8080
