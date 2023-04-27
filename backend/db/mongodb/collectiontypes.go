@@ -8,7 +8,7 @@ type ChatsCollectionType struct {
 }
 
 // create new chats collection
-func NewChatsCollection(col *mongo.Collection) *ChatsCollectionType {
+func newChatsCollection(col *mongo.Collection) *ChatsCollectionType {
 	return &ChatsCollectionType{col: col}
 }
 
@@ -18,7 +18,7 @@ type HumansCollectionType struct {
 }
 
 // create new humans collection
-func NewHumansCollection(col *mongo.Collection) *HumansCollectionType {
+func newHumansCollection(col *mongo.Collection) *HumansCollectionType {
 	return &HumansCollectionType{col: col}
 }
 
@@ -28,6 +28,27 @@ type ConfigsCollectionType struct {
 }
 
 // create new configs collection
-func NewConfigsCollection(col *mongo.Collection) *ConfigsCollectionType {
+func newConfigsCollection(col *mongo.Collection) *ConfigsCollectionType {
 	return &ConfigsCollectionType{col: col}
+}
+
+// templates collection
+
+type TemplatesCollectionType struct {
+	col *mongo.Collection
+}
+
+// create new templates collection
+func newTemplatesCollection(col *mongo.Collection) *TemplatesCollectionType {
+	return &TemplatesCollectionType{col: col}
+}
+
+// AutoAIs model collection type
+type AutoAIsCollectionType struct {
+	col *mongo.Collection
+}
+
+// create new AutoAIs collection
+func newAutoAIsCollection(col *mongo.Collection) *AutoAIsCollectionType {
+	return &AutoAIsCollectionType{col: col}
 }

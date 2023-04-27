@@ -15,7 +15,7 @@ func (c *HumansCollectionType) GetByNickname(nickname string) (models.Human, err
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	filter := bson.D{{Key: "nickname", Value: nickname}}
+	filter := bson.M{"nickname": nickname}
 	result := c.col.FindOne(ctx, filter)
 
 	var human models.Human

@@ -12,9 +12,12 @@ import (
 	"backend/utils"
 )
 
+var client *mongo.Client = nil
 var ChatsCollection *ChatsCollectionType = nil
 var HumansCollection *HumansCollectionType = nil
 var ConfigsCollection *ConfigsCollectionType = nil
+var TemplatesCollection *TemplatesCollectionType = nil
+var AutoAIsCollection *AutoAIsCollectionType = nil
 
 var envVars = [...]string{"MONGO_HOST", "MONGO_PORT", "MONGO_USER_NAME", "MONGO_USER_PASSWORD", "MONGO_DATABASE"}
 
@@ -23,7 +26,7 @@ func init() {
 	// load the environment variables
 	err := godotenv.Load()
 	if err != nil {
-		utils.Logger.Infof("Error loading .env file, will use default values. Err: %s", err)
+		utils.Logger.Infof(".env file not found, using OS ENV variables. Err: %s", err)
 	}
 
 	// get env variables
@@ -45,7 +48,7 @@ func init() {
 	defer cancel()
 
 	// connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err = mongo.Connect(ctx, clientOptions)
 
 	if err != nil {
 		utils.Logger.Fatalf("Error connecting to MongoDB. Err: %s, connStr: %s", err, connStr)
@@ -60,9 +63,11 @@ func init() {
 
 	utils.Logger.Info("Connected to MongoDB!")
 
-	ChatsCollection = NewChatsCollection(client.Database(env["MONGO_DATABASE"]).Collection("chats"))
-	HumansCollection = NewHumansCollection(client.Database(env["MONGO_DATABASE"]).Collection("humans"))
-	ConfigsCollection = NewConfigsCollection(client.Database(env["MONGO_DATABASE"]).Collection("configs"))
+	ChatsCollection = newChatsCollection(client.Database(env["MONGO_DATABASE"]).Collection("chats"))
+	HumansCollection = newHumansCollection(client.Database(env["MONGO_DATABASE"]).Collection("humans"))
+	ConfigsCollection = newConfigsCollection(client.Database(env["MONGO_DATABASE"]).Collection("configs"))
+	TemplatesCollection = newTemplatesCollection(client.Database(env["MONGO_DATABASE"]).Collection("templates"))
+	AutoAIsCollection = newAutoAIsCollection(client.Database(env["MONGO_DATABASE"]).Collection("autoAIs"))
 
 	utils.Logger.Info("MongoDB collections initialized!")
 }
@@ -70,8 +75,8 @@ func init() {
 // Disconnect from MongoDB
 func Shutdown(ctx context.Context) error {
 
-	//Close the connection to MongoDB from either collection
-	if err := ChatsCollection.col.Database().Client().Disconnect(ctx); err != nil {
+	//Close the connection to MongoDB
+	if err := client.Disconnect(ctx); err != nil {
 		utils.Logger.Errorf("Error disconnecting from MongoDB. Err: %s", err)
 		return err
 	}

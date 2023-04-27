@@ -3,6 +3,8 @@ package main
 
 // import required packages
 import (
+	"flag"
+	"fmt"
 	"os"
 
 	"backend/ai"
@@ -18,7 +20,7 @@ func init() {
 	// load the environment variables
 	err := godotenv.Load()
 	if err != nil {
-		utils.Logger.Infof("Error loading .env file, will use default values. Err: %s", err)
+		utils.Logger.Infof(".env file not found, using OS ENV variables. Err: %s", err)
 	}
 
 	// Get the log level from the environment variables
@@ -41,22 +43,27 @@ func init() {
 
 // main function of the application
 func main() {
-	// get command line arguments
-	args := os.Args
+	var chat bool = false
+	var autoai bool = false
+	var showHelp bool = false
 
-	var frontend bool = false
-	// check command line arguments and compare them
-	for _, arg := range args {
-		if arg == "frontend" {
-			frontend = true
-		}
-	}
+	flag.BoolVar(&chat, "chat", false, "Start in Chat console mode")
+	flag.BoolVar(&autoai, "autoai", false, "Start in Auto AI console mode")
+	flag.BoolVar(&showHelp, "help", false, "Show usage information")
 
-	if frontend {
-		//start the server
-		router.RunServer()
-	} else {
+	flag.Parse()
+
+	if showHelp {
+		fmt.Fprintf(os.Stderr, "Usage: %s [OPTIONS]\n", os.Args[0])
+		flag.PrintDefaults()
+	} else if autoai {
+		// start chat via console
+		ai.StartConsoleAuto()
+	} else if chat {
 		// start chat via console
 		ai.StartConsoleChat()
+	} else {
+		//start the server
+		router.RunServer()
 	}
 }

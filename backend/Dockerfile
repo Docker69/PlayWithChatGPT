@@ -34,4 +34,4 @@ EXPOSE 8080
 
 # Command to run
 #CMD ["sleep", "infinity"]
-ENTRYPOINT ["/app/server", "frontend"]
+ENTRYPOINT ["/app/server"]

@@ -15,6 +15,8 @@ db.createUser({
 db.createCollection('chats')
 db.createCollection('configs')
 db.createCollection('humans')
+db.createCollection('templates')
+db.createCollection('autoAIs')
 
 print("============= Ended INIT script =======================");
 
