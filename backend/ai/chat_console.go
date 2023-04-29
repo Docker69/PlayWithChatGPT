@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"backend/ai/helpers"
 	"backend/db/mongodb"
 	"backend/models"
 	"backend/utils"
@@ -137,15 +138,19 @@ func StartConsoleChat() {
 			continue
 		}
 
-		// create new client instance with given apiKey
-		client := openai.NewClient(apiKey)
+		// get the token count from the chat messages
+		numTokens := helpers.NumTokensFromMessages(chat.Messages, currentConfig.Model)
+		//TODO read token limit from .env file
+		allowedTokens := MAX_TOKENS - numTokens
+		utils.Logger.WithField("UUID", chat.Id).Debugf("Allowed Tokens for response: %d", allowedTokens)
 
 		// call OpenAI API to generate response to the user's message
 		resp, err := client.CreateChatCompletion(
 			context.Background(),
 			openai.ChatCompletionRequest{
-				Model:    openai.GPT3Dot5Turbo,
-				Messages: chat.Messages,
+				Model:     currentConfig.Model,
+				Messages:  chat.Messages,
+				MaxTokens: allowedTokens,
 			},
 		)
 

@@ -15,7 +15,7 @@ services:
     networks:
       - api-network
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT}:${REDIS_PORT}"
     volumes:
       - redis-data:/data
       - /etc/timezone:/etc/timezone:ro
@@ -33,7 +33,7 @@ services:
     networks:
       - api-network
     ports:
-      - "27017:27017"
+      - "${MONGO_PORT}:${MONGO_PORT}"
     volumes:
       - ./mongodb/mongo-init.sh:/docker-entrypoint-initdb.d/mongo-init.sh
       - mongodb-data:/data/db

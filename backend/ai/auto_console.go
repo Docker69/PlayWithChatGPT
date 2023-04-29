@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"backend/ai/helpers"
+	"backend/ai/memory"
 	"backend/db/mongodb"
 	"backend/models"
 	"backend/utils"
@@ -167,8 +169,47 @@ func initAutoAI(reader *bufio.Reader, human *models.Human) (models.AutoAI, error
 	return autoAI, nil
 }
 
+// init function of the memory storage
+func initMemory() (memory.MemoryCache, error) {
+	// get memory type from env
+	memType, exists := os.LookupEnv("MEMORY_STORAGE")
+	if !exists {
+		utils.Logger.Info("MEMORY_STORAGE is not defined in env, setting to \"local\"")
+		memType = "local"
+	}
+
+	var mem memory.MemoryCache
+	if memType == "redis" {
+		redisMem, err := memory.NewRedisMem()
+		if err != nil {
+			utils.Logger.Errorf("NewRedisMem error: %v\n", err)
+			return nil, err
+		}
+		mem = redisMem
+		utils.Logger.Info("Memory storage is Redis")
+	} else {
+		localMem, err := memory.NewLocalStorageMem(".")
+		if err != nil {
+			utils.Logger.Panicf("NewLocalStorageMem panic: %v\n", err)
+			return nil, err
+		}
+		mem = localMem
+		utils.Logger.Info("Memory storage is Local")
+	}
+
+	memory.Init(client)
+	return mem, nil
+}
+
 // StartConsoleChat starts an infinite loop that will keep asking for user input until !quit command is entered
 func StartConsoleAuto() {
+
+	// call initMemory function to get memory storage
+	mem, err := initMemory()
+	if err != nil {
+		utils.Logger.Errorf("initMemory error: %v\n", err)
+		return
+	}
 
 	utils.Logger.Info("New console Auto started!")
 
@@ -266,12 +307,19 @@ func StartConsoleAuto() {
 
 		go utils.Spinner(done) // Start the spinner
 
+		// get the token count from the chat messages
+		numTokens := helpers.NumTokensFromMessages(chat.Messages, currentConfig.Model)
+		//TODO read token limit from .env file
+		allowedTokens := MAX_TOKENS - numTokens
+		utils.Logger.WithField("UUID", chat.Id).Debugf("Allowed Tokens for response: %d", allowedTokens)
+
 		// Call OpenAI API to generate response to the user's message
 		resp, err := client.CreateChatCompletion(
 			context.Background(),
 			openai.ChatCompletionRequest{
-				Model:    openai.GPT3Dot5Turbo,
-				Messages: chat.Messages,
+				Model:     currentConfig.Model,
+				Messages:  chat.Messages,
+				MaxTokens: allowedTokens,
 			},
 		)
 		done <- true // Signal the spinner to stop spinning since the operation is done
@@ -311,6 +359,9 @@ func StartConsoleAuto() {
 				Role:    openai.ChatMessageRoleAssistant,
 				Content: content,
 			})
+
+			//add the response to the memory
+			mem.AddMemory(content)
 
 			//Update the chat document in the database
 			err = mongodb.ChatsCollection.Update(chat)

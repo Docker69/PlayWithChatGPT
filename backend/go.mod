@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/go-redis/redis/v8 v8.11.5
+	github.com/gomodule/redigo v1.8.9
 	github.com/google/uuid v1.3.0
 	github.com/joho/godotenv v1.5.1
 	github.com/pkg/errors v0.9.1
@@ -58,6 +59,7 @@ require (
 )
 
 require (
+	github.com/RediSearch/redisearch-go/v2 v2.1.1
 	github.com/labstack/echo/v4 v4.10.2
 	github.com/pkoukk/tiktoken-go v0.1.1
 	github.com/rocketlaunchr/google-search v1.1.5

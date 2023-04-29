@@ -12,6 +12,11 @@ import (
 
 var client *redis.Client
 
+// getter for the redis client
+func GetClient() *redis.Client {
+	return client
+}
+
 func init() {
 
 	// load the environment variables
@@ -33,8 +38,16 @@ func init() {
 		utils.Logger.Error("REDIS_HOST not defined in env, defaulting to localhost")
 		redishost = "localhost"
 	}
+
+	//get the port from the env
+	redisport, exists := os.LookupEnv("REDIS_PORT")
+	if !exists {
+		utils.Logger.Info("REDIS_PORT not defined in env, defaulting to 6379")
+		redisport = "6379"
+	}
+
 	opt := &redis.Options{
-		Addr:     redishost + ":6379",
+		Addr:     redishost + ":" + redisport,
 		Password: redispassword,
 		DB:       0,
 	}
