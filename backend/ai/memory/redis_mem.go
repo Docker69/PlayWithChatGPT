@@ -63,7 +63,6 @@ func NewRedisMem() (*RedisMem, error) {
 	//create redis connection pool
 	redisPool := &redis.Pool{
 		Dial: func() (redis.Conn, error) {
-			//return redis.Dial("tcp", redishost+":"+redisport, redis.DialPassword(redispassword))
 			c, err := redis.Dial("tcp", redishost+":"+redisport)
 			if err != nil {
 				return nil, err
@@ -132,27 +131,6 @@ func NewRedisMem() (*RedisMem, error) {
 			vecnum = 0
 		}
 	}
-
-	/*
-		// Create a document with an id and given score
-		doc := redisearch.NewDocument("ExampleNewClientFromPool:doc2", 1.0)
-		doc.Set("title", "Hello world").
-			Set("body", "foo bar").
-			Set("date", time.Now().Unix())
-
-		// Index the document. The API accepts multiple documents at a time
-		if err := client.Index([]redisearch.Document{doc}...); err != nil {
-			utils.Logger.Fatal(err)
-		}
-
-		// Searching with limit and sorting
-		docs, total, err := client.Search(redisearch.NewQuery("hello world").
-			Limit(0, 2).
-			SetReturnFields("title"))
-
-		fmt.Println(docs[0].Id, docs[0].Properties["title"], total, err)
-	*/
-	///================= TEST IT WORKS =========================///
 
 	return &RedisMem{searchclient: client, redispool: redisPool}, nil
 }
