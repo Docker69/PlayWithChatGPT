@@ -53,7 +53,7 @@ func (l *LocalStorageMem) GetRelevantMemories(data string, max int) []string {
 	return result
 }
 
-func (l *LocalStorageMem) GetStats() int {
+func (l *LocalStorageMem) GetStats() interface{} {
 	return len(l.data)
 }
 

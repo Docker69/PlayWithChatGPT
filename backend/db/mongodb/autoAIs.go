@@ -114,12 +114,15 @@ func (c *AutoAIsCollectionType) Update(data models.AutoAI) error {
 }
 
 // insert a AutoAI model in AutoAIsCollection
-func (c *AutoAIsCollectionType) Insert(data models.AutoAI) error {
+func (c *AutoAIsCollectionType) Insert(auto models.AutoAI) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	_, err := c.col.InsertOne(ctx, data)
+
+	insertResult, err := c.col.InsertOne(ctx, auto)
 	if err != nil {
-		return err
+		return "", err
 	}
-	return nil
+
+	id := insertResult.InsertedID.(primitive.ObjectID).Hex()
+	return id, nil
 }

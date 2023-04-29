@@ -7,19 +7,11 @@ import (
 	"github.com/sashabaranov/go-openai"
 )
 
-//write interface for storing memory data either in local storage or redis
-//the following capabilities are required:
-//- get
-//- add
-//- clear
-//- get relevant
-//- get stats
-
 type MemoryCache interface {
 	GetRelevantMemories(data string, max int) []string
 	AddMemory(text string) error
 	Clear() error
-	GetStats() int
+	GetStats() interface{}
 }
 
 var aiClient *openai.Client = nil

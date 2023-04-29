@@ -157,6 +157,13 @@ func initAutoAI(reader *bufio.Reader, human *models.Human, mem *memory.MemoryCac
 
 	// Print out available AutoAIs and prompt user to choose one
 	if len(autoAIs) > 0 {
+		stats := (*mem).GetStats()
+		if stats != nil {
+			fmt.Println("Memory stats:")
+			fmt.Println(stats)
+			fmt.Println()
+		}
+
 		fmt.Println("Existing AutoAIs:")
 		for i, autoAI := range autoAIs {
 			fmt.Printf("%d: %s\n", i+1, autoAI.Name)
@@ -210,7 +217,7 @@ func initAutoAI(reader *bufio.Reader, human *models.Human, mem *memory.MemoryCac
 	autoAI.HumanId = human.Id
 
 	// Insert the new AutoAI into the database
-	err = mongodb.AutoAIsCollection.Insert(autoAI)
+	autoAI.Id, err = mongodb.AutoAIsCollection.Insert(autoAI)
 	if err != nil {
 		return autoAI, fmt.Errorf("error inserting AutoAI: %v", err)
 	}
@@ -306,7 +313,14 @@ func StartConsoleAuto() {
 		if err != nil {
 			utils.Logger.Errorf("GetChatById error: %v\n", err)
 			return
+		}
 
+		if len(chatFullHistory.Messages) == 0 {
+			chatFullHistory.Messages, err = constructContext(&autoAI, chatContext, chatFullHistory, &mem)
+			if err != nil {
+				utils.Logger.Errorf("full chat history init error: %v\n", err)
+				return
+			}
 		}
 	} else {
 		chatFullHistory.Role = autoAI.Role
@@ -395,6 +409,7 @@ func StartConsoleAuto() {
 
 		// add user directive to the context
 		messagesToSend = append(messagesToSend, userDirectiveMessage)
+		chatFullHistory.Messages = append(chatFullHistory.Messages, userDirectiveMessage)
 
 		// get the final token count from the chat messages
 		numTokens = helpers.NumTokensFromMessages(messagesToSend, currentConfig.Model)
@@ -428,8 +443,13 @@ func StartConsoleAuto() {
 
 		var jsonValid bool = true
 		if !json.Valid([]byte(content)) {
+
 			// Handle invalid JSON error
 			utils.Logger.WithField("UUID", chatFullHistory.Id).Errorf("Invalid JSON response: %v\n", err)
+
+			//jsonStr, _ := json.Marshal(chat.Messages)
+			utils.Logger.WithField("UUID", chatFullHistory.Id).Debugf("content dump: %s", content)
+
 			content, err = utils.FixJSON(content)
 			if err != nil {
 				utils.Logger.WithField("UUID", chatFullHistory.Id).Errorf("FixJSON error: %v\n", err)
@@ -443,7 +463,6 @@ func StartConsoleAuto() {
 		}
 
 		if jsonValid {
-
 			// add the response to the list of messages
 			chatFullHistory.Messages = append(chatFullHistory.Messages, openai.ChatCompletionMessage{
 				Role:    openai.ChatMessageRoleAssistant,
@@ -451,7 +470,10 @@ func StartConsoleAuto() {
 			})
 
 			//add the response to the memory
-			mem.AddMemory(content)
+			err = mem.AddMemory(content)
+			if err != nil {
+				utils.Logger.WithField("UUID", chatFullHistory.Id).Errorf("AddMemory error: %v\n", err)
+			}
 
 			//convert string to byte array
 			contentByte := []byte(content)
@@ -509,6 +531,12 @@ func StartConsoleAuto() {
 			if strings.Contains(input, quitStr) {
 				// check if quit command entered, if so exit the loop
 				fmt.Println("Goodbye !!")
+
+				//Update the chat document in the database befoew exiting
+				err = mongodb.ChatsCollection.Update(chatFullHistory)
+				if err != nil {
+					utils.Logger.WithField("UUID", chatFullHistory.Id).Errorf("on exit UpdateChat error: %v\n", err)
+				}
 				break
 			} else if isY != "y" {
 				//add user input
@@ -519,7 +547,6 @@ func StartConsoleAuto() {
 				if err != nil {
 					utils.Logger.Errorf("Adding user input error: %v\n", err)
 				}
-
 			}
 
 			//Update the chat document in the database
@@ -528,10 +555,10 @@ func StartConsoleAuto() {
 				utils.Logger.WithField("UUID", chatFullHistory.Id).Errorf("UpdateChat error: %v\n", err)
 				continue
 			}
-
 		}
-
 	}
+
+	//close the console
 	reader.Reset(os.Stdin)
 
 	// The context is used to inform the server it has 20 seconds to finish

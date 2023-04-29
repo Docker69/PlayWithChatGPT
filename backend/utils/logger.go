@@ -29,7 +29,7 @@ func init() {
 		MaxAge:     2,  // Max number of days to retain log files before deletion
 		LocalTime:  true,
 	}
-	multi := io.MultiWriter(rotateFileHook, os.Stdout)
+	multi := io.MultiWriter(rotateFileHook, os.Stderr)
 	// Set the output of the logger to the file and stdout
 	Logger.SetOutput(multi)
 }

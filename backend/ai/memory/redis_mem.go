@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/RediSearch/redisearch-go/v2/redisearch"
@@ -20,7 +19,8 @@ type RedisMem struct {
 }
 
 var memoryindex string = "auto-gpt"
-var vecnum int = 0
+
+//var vecnum int = 0
 
 //var memories []models.Memory = []models.Memory{}
 
@@ -105,33 +105,49 @@ func NewRedisMem() (*RedisMem, error) {
 		AddField(redisearch.NewVectorFieldOptions("embedding", options))
 
 	// Drop an existing index. If the index does not exist an error is returned
-	if err := client.Drop(); err != nil {
-		utils.Logger.Error(err)
-	}
+	//if err := client.Drop(); err != nil {
+	//	utils.Logger.Error(err)
+	//}
 
 	def := redisearch.NewIndexDefinition()
 	def.AddPrefix(memoryindex + ":")
 
 	// Create the index with the given schema
 	if err := client.CreateIndexWithIndexDefinition(sc, def); err != nil {
-		utils.Logger.Fatal(err)
+		utils.Logger.Info(err)
 	}
 
 	// get the value from Redis
-	var vecNumStr *redisearch.Document = nil
-	if vecNumStr, err = client.Get(memoryindex + "-vec_num"); err != nil {
-		utils.Logger.Errorf("Error getting vecnum from Redis, setting to 0:  %s", err)
-		vecnum = 0
-	}
-	// convert the string value to an int64
-	if vecNumStr != nil {
-		vecnum, err = strconv.Atoi(string(vecNumStr.Payload))
-		if err != nil {
-			utils.Logger.Errorf("Error converting vecnum from Redis to int:  %s", err)
-			vecnum = 0
-		}
+	info, err := client.Info()
+	if err != nil {
+		utils.Logger.Errorf("Error getting info from Redis, probably index not created:  %s", err)
 	}
 
+	//dump usefull info to log
+	utils.Logger.Infof("redis Index Name: %s", info.Name)
+	utils.Logger.Infof("redis Index DocCount: %d", info.DocCount)
+	utils.Logger.Infof("redis Index IsIndexing: %t", info.IsIndexing)
+	utils.Logger.Infof("redis Index RecordCount: %d", info.RecordCount)
+	utils.Logger.Infof("redis Index MaxDocID: %d", info.MaxDocID)
+	utils.Logger.Infof("redis Index PercentIndexed: %f", info.PercentIndexed)
+	utils.Logger.Infof("redis Index HashIndexingFailures: %d", info.HashIndexingFailures)
+	//utils.Logger.Infof("redis Index info: %v", info)
+
+	/*
+		var vecNumStr *redisearch.Document = nil
+		if vecNumStr, err = client.Get(memoryindex + "-vec_num"); err != nil {
+			utils.Logger.Errorf("Error getting vecnum from Redis, setting to 0:  %s", err)
+			vecnum = 0
+		}
+		// convert the string value to an int64
+		if vecNumStr != nil {
+			vecnum, err = strconv.Atoi(string(vecNumStr.Payload))
+			if err != nil {
+				utils.Logger.Errorf("Error converting vecnum from Redis to int:  %s", err)
+				vecnum = 0
+			}
+		}
+	*/
 	return &RedisMem{searchclient: client, redispool: redisPool}, nil
 }
 
@@ -142,11 +158,30 @@ func (r *RedisMem) AddMemory(text string) error {
 		return errors.New("couldn't create embedding")
 	}
 
-	// Get a vanilla connection and create 100 hashes
-	vanillaConnection := r.redispool.Get()
-	vanillaConnection.Do("HSET", fmt.Sprintf("%s:%d", memoryindex, vecnum), "data", text, "embedding", embedding)
-	vecnum++
-	vanillaConnection.Do("HSET", memoryindex+"-vec_num", vecnum)
+	// get the value from Redis
+	info, err := r.searchclient.Info()
+	if err != nil {
+		utils.Logger.Errorf("Error getting info from Redis, probably index not created:  %s", err)
+	}
+
+	//convert embeddings to byte array
+	bytes, err := utils.Float32ToBytes(embedding)
+	if err != nil {
+		return err
+	}
+
+	// Create a document with an id and given score
+	doc := redisearch.NewDocument(fmt.Sprintf("%s:%d", memoryindex, info.MaxDocID), 1.0)
+	doc.Set("data", text).
+		Set("embedding", bytes)
+
+	//set index options
+	var opt redisearch.IndexingOptions = redisearch.DefaultIndexingOptions
+	opt.Replace = true
+	// Index the document. The API accepts multiple documents at a time
+	if err := r.searchclient.IndexOptions(opt, []redisearch.Document{doc}...); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -173,7 +208,11 @@ func (r *RedisMem) GetRelevantMemories(data string, max int) []string {
 	}
 
 	//convert embeddings to byte array
-	param := map[string]interface{}{"vector": embedding}
+	bytes, err := utils.Float32ToBytes(embedding)
+	if err != nil {
+		return []string{}
+	}
+	param := map[string]interface{}{"vector": bytes}
 
 	//build the query
 	queryStr := fmt.Sprintf("*=>[KNN %d @embedding $vector AS vector_score]", max)
@@ -201,7 +240,16 @@ func (r *RedisMem) GetRelevantMemories(data string, max int) []string {
 	return results
 }
 
-func (r *RedisMem) GetStats() int {
+func Float32ToBytes(embedding []float32) {
+	panic("unimplemented")
+}
 
-	return 0
+func (r *RedisMem) GetStats() interface{} {
+
+	info, err := r.searchclient.Info()
+	if err != nil {
+		utils.Logger.Errorf("Error getting index info from RedisMem: %s", err)
+		return nil
+	}
+	return info
 }
