@@ -16,7 +16,7 @@ import (
 //- get stats
 
 type MemoryCache interface {
-	GetRelevantMemories(query string) []string
+	GetRelevantMemories(data string, max int) []string
 	AddMemory(text string) error
 	Clear() error
 	GetStats() int

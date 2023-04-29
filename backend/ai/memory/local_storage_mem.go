@@ -43,10 +43,10 @@ func (l *LocalStorageMem) Clear() error {
 	return nil
 }
 
-func (l *LocalStorageMem) GetRelevantMemories(query string) []string {
+func (l *LocalStorageMem) GetRelevantMemories(data string, max int) []string {
 	result := make([]string, 0)
 	for k, v := range l.data {
-		if v == query {
+		if v == data {
 			result = append(result, k)
 		}
 	}

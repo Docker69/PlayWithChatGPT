@@ -152,12 +152,53 @@ func (r *RedisMem) AddMemory(text string) error {
 }
 
 func (r *RedisMem) Clear() error {
+	err := r.searchclient.Drop()
+	if err != nil {
+		utils.Logger.Errorf("Error dropping redis index: %s", err)
+		return err
+	}
 	return nil
 }
 
-func (r *RedisMem) GetRelevantMemories(query string) []string {
+func (r *RedisMem) GetRelevantMemories(data string, max int) []string {
 
-	return []string{}
+	//nothing to do
+	if data == "" {
+		return []string{}
+	}
+
+	embedding := createAdaEmbeddings(data)
+	if len(embedding) == 0 {
+		return []string{}
+	}
+
+	//convert embeddings to byte array
+	param := map[string]interface{}{"vector": embedding}
+
+	//build the query
+	queryStr := fmt.Sprintf("*=>[KNN %d @embedding $vector AS vector_score]", max)
+	query := redisearch.NewQuery(queryStr).
+		SetReturnFields("data", "vector_score").
+		SetDialect(2).
+		SetSortBy("vector_score", false).
+		SetParams(param)
+
+	//search the index
+	qResults, total, err := r.searchclient.Search(query)
+	if err != nil {
+		utils.Logger.Errorf("Error querying index: %s", err)
+		return []string{}
+	} else if total == 0 {
+		return []string{}
+	}
+
+	//get the results
+	var results []string = []string{}
+	for i := 0; i < len(qResults); i++ {
+		results = append(results, string(qResults[i].Payload))
+	}
+
+	return results
 }
 
 func (r *RedisMem) GetStats() int {

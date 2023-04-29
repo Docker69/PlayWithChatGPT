@@ -53,7 +53,7 @@ func fixMissingCommas(jsonStr string) string {
 
 // Helper function to escape unmatched quotes in a JSON string
 func fixUnmatchedQuotes(jsonStr string) string {
-	return regexp.MustCompile(`(?m)(?<!\\)"|"(?!\\)`).ReplaceAllStringFunc(jsonStr, func(m string) string {
+	return regexp.MustCompile(`([^\\]|^)(")`).ReplaceAllStringFunc(jsonStr, func(m string) string {
 		if m == `"` {
 			return `\"`
 		}
