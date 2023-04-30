@@ -6,8 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
+	//TODO: consider https://github.com/rueian/rueidis as replacement for redis
 	"github.com/RediSearch/redisearch-go/v2/redisearch"
 	"github.com/gomodule/redigo/redis"
 	"github.com/joho/godotenv"
@@ -165,10 +167,7 @@ func (r *RedisMem) AddMemory(text string) error {
 	}
 
 	//convert embeddings to byte array
-	bytes, err := utils.Float32ToBytes(embedding)
-	if err != nil {
-		return err
-	}
+	bytes := utils.Float32ToBytesFastSafe(embedding)
 
 	// Create a document with an id and given score
 	doc := redisearch.NewDocument(fmt.Sprintf("%s:%d", memoryindex, info.MaxDocID), 1.0)
@@ -198,7 +197,7 @@ func (r *RedisMem) Clear() error {
 func (r *RedisMem) GetRelevantMemories(data string, max int) []string {
 
 	//nothing to do
-	if data == "" {
+	if strings.TrimSpace(data) == "" {
 		return []string{}
 	}
 
@@ -208,10 +207,7 @@ func (r *RedisMem) GetRelevantMemories(data string, max int) []string {
 	}
 
 	//convert embeddings to byte array
-	bytes, err := utils.Float32ToBytes(embedding)
-	if err != nil {
-		return []string{}
-	}
+	bytes := utils.Float32ToBytesFastSafe(embedding)
 	param := map[string]interface{}{"vector": bytes}
 
 	//build the query
@@ -234,14 +230,13 @@ func (r *RedisMem) GetRelevantMemories(data string, max int) []string {
 	//get the results
 	var results []string = []string{}
 	for i := 0; i < len(qResults); i++ {
-		results = append(results, string(qResults[i].Payload))
+		if data, ok := qResults[i].Properties["data"].(string); ok {
+			results = append(results, data)
+		} else {
+			// handle the case where the value is not a string
+		}
 	}
-
 	return results
-}
-
-func Float32ToBytes(embedding []float32) {
-	panic("unimplemented")
 }
 
 func (r *RedisMem) GetStats() interface{} {

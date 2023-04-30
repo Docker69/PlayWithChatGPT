@@ -97,7 +97,7 @@ func (c *AutoAIsCollectionType) GetByName(name string) (models.AutoAI, error) {
 }
 
 // update a AutoAI model in AutoAIsCollection
-func (c *AutoAIsCollectionType) Update(data models.AutoAI) error {
+func (c *AutoAIsCollectionType) Update(data *models.AutoAI) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -106,6 +106,8 @@ func (c *AutoAIsCollectionType) Update(data models.AutoAI) error {
 		return err
 	}
 
+	//don't update the _id, omitempty
+	data.Id = ""
 	_, err = c.col.UpdateOne(ctx, bson.M{"_id": oid}, bson.M{"$set": data})
 	if err != nil {
 		return err

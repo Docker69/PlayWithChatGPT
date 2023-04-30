@@ -61,6 +61,7 @@ require (
 require (
 	github.com/RediSearch/redisearch-go/v2 v2.1.1
 	github.com/labstack/echo/v4 v4.10.2
+	github.com/peteole/testdata-loader v0.3.0
 	github.com/pkoukk/tiktoken-go v0.1.1
 	github.com/rocketlaunchr/google-search v1.1.5
 	github.com/tebeka/selenium v0.9.9

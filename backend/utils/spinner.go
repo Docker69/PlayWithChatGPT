@@ -17,7 +17,7 @@ func Spinner(done chan bool) {
 		case <-done:
 			return
 		case <-ticker.C:
-			if time.Since(start) > 60*time.Second { // Stop the spinner after 60 seconds
+			if time.Since(start) > 600*time.Second { // Stop the spinner after 600 seconds
 				fmt.Println("\rTimeout!")
 				close(done)
 				return

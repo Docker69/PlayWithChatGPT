@@ -10,17 +10,23 @@ type CommandType struct {
 	} `json:"args"`
 }
 
+type MemorizeType struct {
+	Subject     string `json:"subject"`
+	Information string `json:"information"`
+}
 type ThoughtsType struct {
-	Text      string `json:"text"`
-	Reasoning string `json:"reasoning"`
-	Plan      string `json:"plan"`
-	Criticism string `json:"criticism"`
-	Speak     string `json:"speak"`
+	Text      string   `json:"text"`
+	Reasoning string   `json:"reasoning"`
+	Plan      []string `json:"plan"`
+	Criticism string   `json:"criticism"`
+	Speak     string   `json:"speak"`
+	Keywords  string   `json:"keywords"`
 }
 
 type Response struct {
 	Thoughts ThoughtsType `json:"thoughts"`
 	Command  CommandType  `json:"command"`
+	Memorize MemorizeType `json:"memorize"`
 }
 
 /*

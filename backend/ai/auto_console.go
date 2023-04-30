@@ -64,7 +64,7 @@ func constructTemplate(autoAI *models.AutoAI) (string, error) {
 }
 
 // construct the context for ChatGPT from templates collection
-func constructContext(autoAI *models.AutoAI, chatContext string, fullHistory *models.ChatCompletionRequestBody, mem *memory.MemoryCache) ([]openai.ChatCompletionMessage, error) {
+func constructContext(autoAI *models.AutoAI, chatContext *string, fullHistory *models.ChatCompletionRequestBody, mem *memory.MemoryCache) ([]openai.ChatCompletionMessage, error) {
 
 	// Initialize as an empty slice
 	messages := make([]openai.ChatCompletionMessage, 0)
@@ -72,7 +72,7 @@ func constructContext(autoAI *models.AutoAI, chatContext string, fullHistory *mo
 	// add the message to a list of messages
 	messages = append(messages, openai.ChatCompletionMessage{
 		Role:    openai.ChatMessageRoleSystem,
-		Content: chatContext,
+		Content: *chatContext,
 	})
 
 	// add now the time and date in the following format: 'Wed Apr 26 01:15:31 2023' to the context
@@ -84,64 +84,74 @@ func constructContext(autoAI *models.AutoAI, chatContext string, fullHistory *mo
 	// add reminder of the past
 	pastThoughts := "This reminds you of these events from your past:\n"
 
+	const REMINDER_LIMIT = 5
+
 	//check depth of history, if empty or only the first context don't bother
 	n := len(fullHistory.Messages)
+
 	if n > 1 {
-		//get the relevant past from the memory
-		// Extract the content from upto last 9 message and add it to a string array
+		// get the relevant past from the memory
+		// Extract the content from upto last REMINDER_LIMIT messages and add it to a string array
 		var contents []string
-		var forEmbeddings []openai.ChatCompletionMessage = []openai.ChatCompletionMessage{}
-		if n > 9 {
-			//last 9 messages
-			forEmbeddings = fullHistory.Messages[n-9:]
-		} else {
-			//get all messages ecept first one (main context)
-			forEmbeddings = fullHistory.Messages[1:]
+		var past []string
+		// get only the assistant messages from full history
+		var assistantMessages []openai.ChatCompletionMessage = []openai.ChatCompletionMessage{}
+		for _, msg := range fullHistory.Messages {
+			if msg.Role == openai.ChatMessageRoleAssistant {
+				assistantMessages = append(assistantMessages, msg)
+			}
 		}
 
-		for _, msg := range forEmbeddings {
-			contents = append(contents, msg.Content)
-		}
-
-		//join the string array to a single string and search the memory
-		past := (*mem).GetRelevantMemories(strings.Join(contents, ", "), 10)
-
-		//join past messages
-		pastThoughts += strings.Join(past, " ")
-		pastThoughts += "\n"
-
-		messageToAppend := openai.ChatCompletionMessage{
-			Role:    openai.ChatMessageRoleSystem,
-			Content: pastThoughts,
-		}
-
-		// get the token count from the chat messages
-		curTokens := helpers.NumTokensFromMessages(messages, currentConfig.Model)
-		// tokens to be added
-		numTokensToAppend := helpers.NumTokensFromMessages([]openai.ChatCompletionMessage{messageToAppend}, currentConfig.Model)
-
-		//if too many tokens start removing past messages until we have 2500 tokens
-		for numTokensToAppend+curTokens > 2500 {
-			//remove first message in contents
-			contents = contents[1:]
-			//join the string array to a single string and search the memory
-			past := (*mem).GetRelevantMemories(strings.Join(contents, " "), 10)
-
-			//join past messages
-			pastThoughts += strings.Join(past, " ")
-			pastThoughts += "\n"
-
-			messageToAppend := openai.ChatCompletionMessage{
-				Role:    openai.ChatMessageRoleSystem,
-				Content: pastThoughts,
+		m := len(assistantMessages)
+		if m > 0 {
+			var forEmbeddings []openai.ChatCompletionMessage = []openai.ChatCompletionMessage{}
+			if m > REMINDER_LIMIT {
+				//last REMINDER_LIMIT messages
+				forEmbeddings = assistantMessages[m-REMINDER_LIMIT:]
+			} else {
+				//get all messages except first one (main context)
+				forEmbeddings = assistantMessages
 			}
 
-			numTokensToAppend = helpers.NumTokensFromMessages([]openai.ChatCompletionMessage{messageToAppend}, currentConfig.Model)
+			for _, msg := range forEmbeddings {
+				contents = append(contents, msg.Content)
+			}
+
+			//join the string array to a single string and search the memory
+			past = (*mem).GetRelevantMemories(strings.Join(contents, ", "), REMINDER_LIMIT)
 
 		}
 
-		//finally add the past message to the context
-		messages = append(messages, messageToAppend)
+		// if no past, no point in the appending
+		if len(past) > 0 {
+			pastMessageToAppend := openai.ChatCompletionMessage{
+				Role:    openai.ChatMessageRoleSystem,
+				Content: pastThoughts + strings.Join(past, " ") + "\n",
+			}
+			// get the token count from the chat messages
+			curTokens := helpers.NumTokensFromMessages(messages, currentConfig.Model)
+			// tokens to be added
+			numTokensToAppend := helpers.NumTokensFromMessages([]openai.ChatCompletionMessage{pastMessageToAppend}, currentConfig.Model)
+
+			//if too many tokens start removing past messages until we have 2500 tokens
+			for numTokensToAppend+curTokens > 2500 {
+				//remove first message in contents (oldest)
+				contents = contents[1:]
+				//join the string array to a single string and search the memory
+				past = (*mem).GetRelevantMemories(strings.Join(contents, " "), REMINDER_LIMIT)
+
+				pastMessageToAppend = openai.ChatCompletionMessage{
+					Role:    openai.ChatMessageRoleSystem,
+					Content: pastThoughts + strings.Join(past, " ") + "\n",
+				}
+
+				numTokensToAppend = helpers.NumTokensFromMessages([]openai.ChatCompletionMessage{pastMessageToAppend}, currentConfig.Model)
+
+			}
+			//finally add the past message to the context
+			messages = append(messages, pastMessageToAppend)
+		}
+
 	}
 
 	return messages, nil
@@ -183,8 +193,8 @@ func initAutoAI(reader *bufio.Reader, human *models.Human, mem *memory.MemoryCac
 		}
 	}
 
-	//clear redis from all keys & documents
-	(*mem).Clear()
+	//clear memory from all memories
+	//(*mem).Clear()
 
 	// If no existing AutoAI was chosen, create a new one
 	fmt.Print("Enter AutoAI name: ")
@@ -244,6 +254,8 @@ func initMemory() (memory.MemoryCache, error) {
 		mem = redisMem
 		utils.Logger.Info("Memory storage is Redis")
 	} else {
+		//TODO: add support for local memory type
+		utils.Logger.Panic("NewLocalStorageMem panic: NOT READY!!!!!\n")
 		localMem, err := memory.NewLocalStorageMem(".")
 		if err != nil {
 			utils.Logger.Panicf("NewLocalStorageMem panic: %v\n", err)
@@ -255,6 +267,66 @@ func initMemory() (memory.MemoryCache, error) {
 
 	memory.Init(client)
 	return mem, nil
+}
+
+func initChats(autoAI *models.AutoAI, human *models.Human, chatFullHistory *models.ChatCompletionRequestBody, chatContext *string, mem *memory.MemoryCache) error {
+	//if autoAI has non empty ChatID, load the chat
+	if autoAI.ChatId != "" {
+		var err error = nil
+		*chatFullHistory, err = mongodb.ChatsCollection.GetById(autoAI.ChatId)
+		if err != nil {
+			utils.Logger.Errorf("GetChatById error: %v\n", err)
+			return err
+		}
+
+		if len(chatFullHistory.Messages) == 0 {
+			chatFullHistory.Messages, err = constructContext(autoAI, chatContext, chatFullHistory, mem)
+			if err != nil {
+				utils.Logger.Errorf("full chat history init error: %v\n", err)
+				return err
+			}
+		}
+	} else {
+		chatFullHistory.Role = autoAI.Role
+		chatFullHistory.HumanId = human.Id
+		//pass the chat as pointer to the function
+		_id, err := mongodb.ChatsCollection.Insert(chatFullHistory)
+		if err != nil {
+			utils.Logger.Errorf("InitNewChatDocument error: %v\n", err)
+			return err
+		}
+
+		chatFullHistory.Id = _id
+		fmt.Println("Chat ID: ", chatFullHistory.Id)
+
+		//Create ChatRecord with the chat id and role
+		chatRecord := models.ChatRecord{Id: _id, Role: chatFullHistory.Role}
+		human.ChatIds = append(human.ChatIds, chatRecord)
+		err = mongodb.HumansCollection.UpdateChats(human)
+		if err != nil {
+			utils.Logger.Errorf("UpdateHumanChats error: %v\n", err)
+			return err
+		}
+
+		//update the autoAI chat id
+		autoAI.ChatId = _id
+		err = mongodb.AutoAIsCollection.Update(autoAI)
+
+		if err != nil {
+			utils.Logger.Errorf("UpdateAutoAIChatId error: %v\n", err)
+			return err
+		}
+
+		// Init full chat history
+		chatFullHistory.Messages, err = constructContext(autoAI, chatContext, chatFullHistory, mem)
+		if err != nil {
+			utils.Logger.Errorf("full chat history init error: %v\n", err)
+			return err
+		}
+
+	}
+
+	return nil
 }
 
 // StartConsoleChat starts an infinite loop that will keep asking for user input until !quit command is entered
@@ -307,59 +379,11 @@ func StartConsoleAuto() {
 		utils.Logger.Errorf("GetTemplateByName error: %v\n", err)
 	}
 
-	//if autoAI has non empty ChatID, load the chat
-	if autoAI.ChatId != "" {
-		*chatFullHistory, err = mongodb.ChatsCollection.GetById(autoAI.ChatId)
-		if err != nil {
-			utils.Logger.Errorf("GetChatById error: %v\n", err)
-			return
-		}
-
-		if len(chatFullHistory.Messages) == 0 {
-			chatFullHistory.Messages, err = constructContext(&autoAI, chatContext, chatFullHistory, &mem)
-			if err != nil {
-				utils.Logger.Errorf("full chat history init error: %v\n", err)
-				return
-			}
-		}
-	} else {
-		chatFullHistory.Role = autoAI.Role
-		chatFullHistory.HumanId = human.Id
-		//pass the chat as pointer to the function
-		_id, err := mongodb.ChatsCollection.Insert(chatFullHistory)
-		if err != nil {
-			utils.Logger.Errorf("InitNewChatDocument error: %v\n", err)
-			return
-		}
-
-		chatFullHistory.Id = _id
-		fmt.Println("Chat ID: ", chatFullHistory.Id)
-
-		//Create ChatRecord with the chat id and role
-		chatRecord := models.ChatRecord{Id: _id, Role: chatFullHistory.Role}
-		human.ChatIds = append(human.ChatIds, chatRecord)
-		err = mongodb.HumansCollection.UpdateChats(&human)
-		if err != nil {
-			utils.Logger.Errorf("UpdateHumanChats error: %v\n", err)
-			return
-		}
-
-		//update the autoAI chat id
-		autoAI.ChatId = _id
-		err = mongodb.AutoAIsCollection.Update(autoAI)
-
-		if err != nil {
-			utils.Logger.Errorf("UpdateAutoAIChatId error: %v\n", err)
-			return
-		}
-
-		// Init full chat history
-		chatFullHistory.Messages, err = constructContext(&autoAI, chatContext, chatFullHistory, &mem)
-		if err != nil {
-			utils.Logger.Errorf("full chat history init error: %v\n", err)
-			return
-		}
-
+	//init Chats
+	err = initChats(&autoAI, &human, chatFullHistory, &chatContext, &mem)
+	if err != nil {
+		utils.Logger.Errorf("InitChats error: %v\n", err)
+		return
 	}
 
 	fmt.Println("Conversation")
@@ -375,7 +399,7 @@ func StartConsoleAuto() {
 		go utils.Spinner(done)
 
 		// construct the context for ChatGPT
-		messagesToSend, err := constructContext(&autoAI, chatContext, chatFullHistory, &mem)
+		messagesToSend, err := constructContext(&autoAI, &chatContext, chatFullHistory, &mem)
 		if err != nil {
 			utils.Logger.Errorf("ConstructContext error: %v\n", err)
 			return
@@ -393,23 +417,23 @@ func StartConsoleAuto() {
 		//current potential count of Tokens
 		numTokens += userDirectiveTokens
 
-		// fill additional mesages from full history starting from the last message till more than 2500 tokens
-		n := len(chatFullHistory.Messages)
-		if n > 3 {
-			messageTokens := helpers.NumTokensFromMessages(chatFullHistory.Messages[3:], currentConfig.Model)
-			//iterate in reverse order over chatFullHistory, don't include the 3 first messages that are already there
-			var idx int = n - 1
-			for idx = 3; idx < n && numTokens+messageTokens > 2500; idx++ {
-				//get token count of the message
-				messageTokens = helpers.NumTokensFromMessages(chatFullHistory.Messages[idx:], currentConfig.Model)
+		/*
+			// fill additional mesages from full history starting from the last message till more than 2500 tokens
+			n := len(chatFullHistory.Messages)
+			if n > 2 {
+				messageTokens := helpers.NumTokensFromMessages(chatFullHistory.Messages[1:], currentConfig.Model)
+				//iterate in reverse order over chatFullHistory, don't include the 3 first messages that are already there
+				var idx int = n - 2
+				for idx = 2; idx < n && numTokens+messageTokens > 2500; idx++ {
+					//get token count of the message
+					messageTokens = helpers.NumTokensFromMessages(chatFullHistory.Messages[idx:], currentConfig.Model)
+				}
+				//add the slice of messages to the messagesToSend
+				messagesToSend = append(messagesToSend, chatFullHistory.Messages[idx:]...)
 			}
-			//add the slice of messages to the messagesToSend
-			messagesToSend = append(messagesToSend, chatFullHistory.Messages[idx-1:]...)
-		}
-
+		*/
 		// add user directive to the context
 		messagesToSend = append(messagesToSend, userDirectiveMessage)
-		chatFullHistory.Messages = append(chatFullHistory.Messages, userDirectiveMessage)
 
 		// get the final token count from the chat messages
 		numTokens = helpers.NumTokensFromMessages(messagesToSend, currentConfig.Model)
@@ -481,8 +505,25 @@ func StartConsoleAuto() {
 			var responseData models.Response
 			err = json.Unmarshal(contentByte, &responseData)
 			if err != nil {
-				utils.Logger.WithField("UUID", chatFullHistory.Id).Errorf("Error unmarsheling response: %v\n", err)
-				return
+				utils.Logger.WithField("UUID", chatFullHistory.Id).Errorf("==========================================================================================\n"+
+					"Error unmarsheling response: %v\n,"+
+					"Content Dump: %s\n"+
+					"==========================================================================================\n", err, content)
+				//try to unmarshel then to a map
+				var dataMap map[string]interface{}
+				if err = json.Unmarshal(contentByte, &dataMap); err != nil {
+					// Handle any errors that may occur during parsing
+					utils.Logger.WithField("UUID", chatFullHistory.Id).Errorf("Error unmarsheling to a map: %v\n", err)
+					return
+				}
+
+				//output the map
+				utils.Logger.WithField("UUID", chatFullHistory.Id).Info("==========================================================================================")
+				utils.Logger.WithField("UUID", chatFullHistory.Id).Info("Map:")
+				utils.Logger.WithField("UUID", chatFullHistory.Id).Info(dataMap)
+				utils.Logger.WithField("UUID", chatFullHistory.Id).Info("==========================================================================================")
+
+				continue
 			}
 			//output the response in human readible format
 			// Output the thoughts
@@ -492,7 +533,10 @@ func StartConsoleAuto() {
 			fmt.Printf("- Reasoning: %v\n", responseData.Thoughts.Reasoning)
 			fmt.Printf("- Plan: %v\n", responseData.Thoughts.Plan)
 			fmt.Printf("- Criticism: %v\n", responseData.Thoughts.Criticism)
-			fmt.Printf("- Speak: %v\n", responseData.Thoughts.Speak)
+			if responseData.Thoughts.Speak != "" {
+				fmt.Printf("- Speak: %v\n", responseData.Thoughts.Speak)
+			}
+			fmt.Printf("- Keywords: %v\n", responseData.Thoughts.Keywords)
 
 			// Output the command
 			fmt.Println("Command:")
@@ -510,6 +554,10 @@ func StartConsoleAuto() {
 			if responseData.Command.Args.Reason != "" {
 				fmt.Printf("  - Reason: %v\n", responseData.Command.Args.Reason)
 			}
+			// Output what to memorize
+			fmt.Println("Memorize:")
+			fmt.Printf("- Subject: %v\n", responseData.Memorize.Subject)
+			fmt.Printf("- Information: %v\n", responseData.Memorize.Information)
 			fmt.Println("==========================================================================================")
 
 			//utils.Logger.WithField("UUID", chat.Id).Debugf("Model: %s", resp.Model)
