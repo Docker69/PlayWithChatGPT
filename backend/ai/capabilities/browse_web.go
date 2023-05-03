@@ -20,17 +20,13 @@ import (
 
 // BrowseWeb implements Capable interface and represents a colly web scrapper capability.
 type BrowseWeb struct {
-	// Fields for the individual capability
-	name        string
-	description string
-	version     string
-
 	//openai client
 	MAX_TOKENS int
 	client     *openai.Client
 }
 
 // NewBrowseWeb creates a new instance of BrowseWeb with the specified URL.
+
 func NewBrowseWeb() (*BrowseWeb, error) {
 
 	utils.Logger.Info("Init BrowseWeb capability")
@@ -73,11 +69,8 @@ func NewBrowseWeb() (*BrowseWeb, error) {
 	}
 
 	capability := &BrowseWeb{
-		name:        "browse_web",
-		description: "A capability that scrapes and memorize the web site text.",
-		version:     "1.0",
-		MAX_TOKENS:  max_tokens,
-		client:      client,
+		MAX_TOKENS: max_tokens,
+		client:     client,
 	}
 
 	return capability, nil
@@ -85,68 +78,17 @@ func NewBrowseWeb() (*BrowseWeb, error) {
 
 // Name returns the name of the capability.
 func (c *BrowseWeb) Name() string {
-	return c.name
+	return "browse_website"
 }
 
 // Description returns a short description of what the capability does.
 func (c *BrowseWeb) Description() string {
-	return c.description
+	return "A capability that scrapes and memorize the web site text."
 }
 
 // Version returns the version number of the capability.
 func (c *BrowseWeb) Version() string {
-	return c.version
-}
-
-// Run runs the capability.
-func (c *BrowseWeb) Run(mem *memory.MemoryCache, args ...interface{}) (interface{}, error) {
-	var ok bool
-
-	//minimum 2 args
-	if len(args) < 2 {
-		return nil, fmt.Errorf("BrowseWeb: at least one argument is required")
-	}
-
-	url, ok := args[0].(string)
-	if !ok {
-		return nil, fmt.Errorf("BrowseWeb: url must be a string")
-	}
-	if url == "" {
-		return nil, fmt.Errorf("BrowseWeb: input is empty")
-	}
-
-	quetion, ok := args[1].(string)
-	if !ok {
-		return nil, fmt.Errorf("BrowseWeb: quetion must be a string")
-	}
-	if quetion == "" {
-		return nil, fmt.Errorf("BrowseWeb: quetion is empty")
-	}
-
-	//scrape the web site
-	texts, err := c.scrape(url)
-	if err != nil {
-		return nil, fmt.Errorf("BrowseWeb, error scraping the web site: %v", err)
-	}
-
-	//summarize the web site content
-	text, err := c.summarize(texts, quetion, mem)
-	if err != nil {
-		return nil, fmt.Errorf("BrowseWeb, error summarizing the web site: %v", err)
-	}
-
-	//scrape the web site
-	links, err := c.links(url)
-	if err != nil {
-		return nil, fmt.Errorf("BrowseWeb, error getting links from the web site: %v", err)
-	}
-
-	resultJson := map[string]interface{}{
-		"summary": text,
-		"links":   links,
-	}
-
-	return resultJson, nil
+	return "1.0"
 }
 
 // Stop stops the capability.
@@ -154,37 +96,96 @@ func (c *BrowseWeb) Stop() error {
 	return nil
 }
 
+// Run runs the capability.
+
+func (c *BrowseWeb) Run(mem *memory.MemoryCache, args ...interface{}) (interface{}, error) {
+
+	var ok bool
+
+	//minimum 2 args
+	if len(args) < 1 {
+		return nil, fmt.Errorf("BrowseWeb: at least one argument is required")
+	}
+	command, ok := args[0].(models.ArgsType)
+	if !ok {
+		return nil, fmt.Errorf("BrowseWeb: input must be a CommandType")
+	}
+
+	if command.URL == "" {
+		return nil, fmt.Errorf("BrowseWeb: url is empty")
+	}
+	if command.Question == "" {
+		return nil, fmt.Errorf("BrowseWeb: quetion is empty")
+	}
+
+	//scrape the web site
+	texts, links, err := c.scrape(command.URL)
+	if err != nil {
+		return nil, fmt.Errorf("BrowseWeb, error scraping the web site: %v", err)
+	}
+
+	//summarize the web site content
+	text, err := c.summarize(texts, command.URL, command.Question, mem)
+	if err != nil {
+		return nil, fmt.Errorf("BrowseWeb, error summarizing the web site: %v", err)
+	}
+
+	//no more than 5 links
+	if len(links) > 5 {
+		links = links[:5]
+	}
+
+	resultJson := map[string]interface{}{
+		"Answer gathered from website: ": text,
+		"Links":                          links,
+	}
+
+	return resultJson, nil
+}
+
 // scrapes the web site and memorizes the text into the memory
-func (c *BrowseWeb) scrape(url string) ([]string, error) {
+func (c *BrowseWeb) scrape(url string) ([]string, []string, error) {
 
 	//scrape the web site
 	text := []string{}
+	links := []string{}
 	coll := colly.NewCollector()
 	if coll == nil {
-		return []string{}, fmt.Errorf("BrowseWeb: collector is nil")
+		return []string{}, []string{}, fmt.Errorf("BrowseWeb: collector is nil")
 	}
 	coll.SetRequestTimeout(120 * time.Second)
 
 	coll.OnHTML("body", func(e *colly.HTMLElement) {
 		//text = e.Text
-		text = e.ChildTexts("p, li, h1, h2, h3, h4, h5, h6")
-	})
+		//text = e.ChildTexts("p, li, h1, h2, h3, h4, h5, h6")
+		text = e.ChildTexts("p, li, span")
+		hrefs := e.ChildAttrs("a[href]", "href")
+		linkTexts := e.ChildTexts("a[href]")
+		if len(linkTexts) != len(hrefs) {
+			utils.Logger.Error("BrowseWeb: links hrefs not equal to link texts")
+			return
+		}
 
-	coll.OnHTML("a[href]", func(e *colly.HTMLElement) {
-		fmt.Println(e.Text)
+		//find if relative link or absolute
+		for i, link := range hrefs {
+			//if length is greater than 1 and starts with / then it is a relative link
+			if strings.HasPrefix(link, "/") && len(link) > 1 {
+				links = append(links, "\"text\":\""+linkTexts[i]+"\", \"link\":\""+url+link+"\"")
+			}
+		}
 	})
 
 	err := coll.Visit(url)
 
 	if err != nil {
-		return []string{}, fmt.Errorf("BrowseWeb: error visiting the web site: %v", err)
+		return []string{}, []string{}, fmt.Errorf("BrowseWeb: error visiting the web site: %v", err)
 	}
 
-	return text, nil
+	return text, links, nil
 }
 
 // scrapes the web site for links
-func (c *BrowseWeb) summarize(texts []string, quetion string, mem *memory.MemoryCache) (string, error) {
+func (c *BrowseWeb) summarize(texts []string, url string, question string, mem *memory.MemoryCache) (string, error) {
 
 	text := ""
 
@@ -209,18 +210,69 @@ func (c *BrowseWeb) summarize(texts []string, quetion string, mem *memory.Memory
 		return "", fmt.Errorf("BrowseWeb: error tokenizing the text")
 	}
 
+	//init variables
+	summaries := []string{}
+	messagesToSend := []openai.ChatCompletionMessage{}
+	numTokens := 0
 	flattenedText := ""
+
+	utils.Logger.Info("BrowseWeb: Start summarizing the text")
 	for _, s := range sentences {
+
 		flattenedText += s.Text
+
+		messagesToSend = []openai.ChatCompletionMessage{summaryMessage(flattenedText+"\n", question)}
+
+		// get the final token count from the chat messages
+		numTokens = helpers.NumTokensFromMessages(messagesToSend, models.NewOpenAIConfig().Model)
+
+		if numTokens > 3000 {
+			idx := len(summaries)
+			header := fmt.Sprintf("Source: %s\nContent summary part#%d: ", url, idx)
+
+			summary, err := c.sendSummaryMessage(numTokens, header, messagesToSend, mem)
+			if err != nil {
+				return "", fmt.Errorf("BrowseWeb: error sending summary message: %v", err)
+			}
+			summaries = append(summaries, summary)
+			flattenedText = ""
+			utils.Logger.Infof("BrowseWeb: Summarizied part #%d", idx)
+		}
 	}
 
-	flattenedText += "\n"
+	//there are always at least some sentences left
+	//handle edge case where the last sentence actually brought numTokens > 3000, if this is the case then flattenedText == ""
+	if flattenedText != "" {
+		idx := len(summaries)
+		header := fmt.Sprintf("Source: %s\nContent summary part#%d: ", url, idx)
+		summary, err := c.sendSummaryMessage(numTokens, header, messagesToSend, mem)
+		if err != nil {
+			return "", fmt.Errorf("BrowseWeb: error sending summary message: %v", err)
+		}
+		summaries = append(summaries, summary)
+		utils.Logger.Infof("BrowseWeb: Summarizied part #%d", idx)
+	}
 
-	messagesToSend := []openai.ChatCompletionMessage{}
-	messagesToSend = append(messagesToSend, summaryMessage(flattenedText, quetion))
+	utils.Logger.Info("BrowseWeb: Summarized all individual parts")
 
-	// get the final token count from the chat messages
-	numTokens := helpers.NumTokensFromMessages(messagesToSend, models.NewOpenAIConfig().Model)
+	if len(summaries) == 1 {
+		return summaries[0], nil
+	}
+
+	// join the summaries to one string and request overall summary
+	messagesToSend = []openai.ChatCompletionMessage{summaryMessage(strings.Join(summaries, "\n")+"\n", question)}
+	numTokens = helpers.NumTokensFromMessages(messagesToSend, models.NewOpenAIConfig().Model)
+	summary, err := c.sendSummaryMessage(numTokens, "", messagesToSend, mem)
+	if err != nil {
+		return "", fmt.Errorf("BrowseWeb: error sending summary message: %v", err)
+	}
+
+	utils.Logger.Info("BrowseWeb: Summarized over all summaries")
+
+	return summary, nil
+}
+
+func (c *BrowseWeb) sendSummaryMessage(numTokens int, header string, messagesToSend []openai.ChatCompletionMessage, mem *memory.MemoryCache) (string, error) {
 
 	//TODO read token limit from .env file
 	allowedTokens := c.MAX_TOKENS - numTokens
@@ -243,21 +295,16 @@ func (c *BrowseWeb) summarize(texts []string, quetion string, mem *memory.Memory
 		return "", fmt.Errorf("BrowseWeb: error calling OpenAI API: %v", err)
 	}
 
+	//"Source: %s\nContent summary part#%d: %s"
 	// get the generated response from OpenAI API
-	content := response.Choices[0].Message.Content
-
+	summaryContent := header + response.Choices[0].Message.Content
 	//add the response to the memory
-	err = (*mem).AddMemory(content)
+	err = (*mem).AddMemory(summaryContent)
 	if err != nil {
 		return "", fmt.Errorf("BrowseWeb: error adding memory: %v", err)
 	}
-	return "", nil
-}
 
-// scrapes the web site for links
-func (c *BrowseWeb) links(url string) (string, error) {
-
-	return "", nil
+	return summaryContent, nil
 }
 
 func summaryMessage(content string, question string) openai.ChatCompletionMessage {

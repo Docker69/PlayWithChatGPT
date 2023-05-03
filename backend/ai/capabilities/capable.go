@@ -62,6 +62,16 @@ func (f *CapabilityFactory) Remove(name string) error {
 // Execute executes a command from the factory, and returns the results as JSON
 func (f *CapabilityFactory) Execute(Command models.CommandType, mem *memory.MemoryCache) (string, error) {
 
+	//nothing to do
+	nothingToDo := map[string]bool{
+		"do_nothing": true,
+		"user_input": true,
+	}
+	//check if Command is in nothing array
+	if nothingToDo[Command.Name] {
+		return "", nil
+	}
+
 	// Get the capability.
 	capability := f.Get(Command.Name)
 
@@ -71,7 +81,7 @@ func (f *CapabilityFactory) Execute(Command models.CommandType, mem *memory.Memo
 	}
 
 	// Run the capability and get results.
-	results, err := capability.Run(mem, Command.Args.Input)
+	results, err := capability.Run(mem, Command.Args)
 	if err != nil {
 		return "", err
 	}
@@ -82,7 +92,8 @@ func (f *CapabilityFactory) Execute(Command models.CommandType, mem *memory.Memo
 		return "", err
 	}
 
-	return capability.Description() + " " + string(jsonResponse), nil
+	result := fmt.Sprintf("{\"%s\": %s}", capability.Name(), string(jsonResponse))
+	return result, nil
 }
 
 // run capability from CapabilityFactory based on command input and arguments (interface) passed in
@@ -110,5 +121,4 @@ func init() {
 		utils.Logger.Errorf("CapabilityFactory: error creating browes web capability %v", err)
 	}
 	capabilityFactory.Add(browseWeb)
-
 }

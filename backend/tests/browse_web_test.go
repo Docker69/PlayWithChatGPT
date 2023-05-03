@@ -3,6 +3,7 @@ package tests_test
 import (
 	"backend/ai"
 	"backend/ai/capabilities"
+	"backend/models"
 	"encoding/json"
 	"os"
 	"testing"
@@ -23,7 +24,7 @@ func (mc *MockCollector) OnHTML(selector string, cb colly.HTMLCallback) {
 // Then, we can write our tests
 func TestScrape(t *testing.T) {
 
-	capability := capabilities.GetCapabilityFactory().Get("browse_web").(*capabilities.BrowseWeb)
+	capability := capabilities.GetCapabilityFactory().Get("browse_website").(*capabilities.BrowseWeb)
 	if capability == nil {
 		t.Error("Unexpected error: can't get capability")
 		t.FailNow()
@@ -34,11 +35,33 @@ func TestScrape(t *testing.T) {
 		t.Errorf("Unexpected error: %v", err)
 	}
 
-	// Call the scrape function with a fake URL
 	//texts, err := capability.Run(&ai.Mem, "https://niyasoft.com/", "What niya soft does?")
-	texts, err := capability.Run(&ai.Mem, "https://multi-programming.com/game-development/white-label-solution", "what is white label solution?")
-	//texts, err := capability.Run(&ai.Mem, "https://blog.logrocket.com/building-web-scraper-go-colly/", "what is web scraping?")
+	//texts, err := capability.Run(&ai.Mem, "https://multi-programming.com/game-development/white-label-solution", "what is white label solution?")
+	//texts, err := capability.Run(&ai.Mem, "https://blog.logrocket.com/building-web-scraper-go-colly", "what is web scraping?")
 	//texts, err := capability.Run(&ai.Mem, "https://en.wikipedia.org/wiki/Rome", "What is Rome?")
+	//texts, err := capability.Run(&ai.Mem, "https://www.washingtonpost.com/books/2022/11/17/best-sci-fi-fantasy", "What are the top 5 books of 2022?")
+
+	//params := []string{"https://niyasoft.com/", "What niya soft does?"}
+	//params := []string{"https://multi-programming.com/game-development/white-label-solution", "what is white label solution?"}
+	//params := []string{"https://blog.logrocket.com/building-web-scraper-go-colly", "what is web scraping?"}
+	//parmas := []string{"https://en.wikipedia.org/wiki/Rome", "What is Rome?"}
+	params := []string{"https://www.washingtonpost.com/books/2022/11/17/best-sci-fi-fantasy", "What are the top 5 books of 2022?"}
+
+	args := models.ArgsType{
+		URL:      params[0],
+		Question: params[1],
+		Input:    "",
+		Reason:   "",
+	}
+
+	// Call the scrape function with a fake URL
+	command := models.CommandType{
+		Name: "browse_web",
+		Args: args,
+	}
+
+	texts, err := capability.Run(&ai.Mem, command)
+
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 		t.FailNow()

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"backend/ai/memory"
+	"backend/models"
 	"backend/utils"
 
 	googlesearch "github.com/rocketlaunchr/google-search"
@@ -28,16 +29,16 @@ func (gs *GoogleSearch) Run(mem *memory.MemoryCache, args ...interface{}) (inter
 	if len(args) < 1 {
 		return nil, fmt.Errorf("GoogleSearch: at least one argument is required")
 	}
-	input, ok := args[0].(string)
+	command, ok := args[0].(models.ArgsType)
 	if !ok {
-		return nil, fmt.Errorf("GoogleSearch: input must be a string")
+		return nil, fmt.Errorf("GoogleSearch: input must be a CommandType")
 	}
-	if input == "" {
+	if command.Input == "" {
 		return nil, fmt.Errorf("GoogleSearch: input is empty")
 	}
 
-	utils.Logger.Debugf("Performing Google search for '%s'", input)
-	results, err := googlesearch.Search(context.Background(), input)
+	utils.Logger.Debugf("Performing Google search for '%s'", command.Input)
+	results, err := googlesearch.Search(context.Background(), command.Input)
 	if err != nil {
 		return nil, fmt.Errorf("GoogleSearch: failed to perform Google search: %v", err)
 	}

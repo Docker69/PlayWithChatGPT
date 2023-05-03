@@ -1,13 +1,14 @@
 package models
 
+type ArgsType struct {
+	URL      string `json:"url"`
+	Question string `json:"question"`
+	Input    string `json:"input"`
+	Reason   string `json:"reason"`
+}
 type CommandType struct {
-	Name string `json:"name"`
-	Args struct {
-		URL      string `json:"url"`
-		Question string `json:"question"`
-		Input    string `json:"input"`
-		Reason   string `json:"reason"`
-	} `json:"args"`
+	Name string   `json:"name"`
+	Args ArgsType `json:"args"`
 }
 
 type MemorizeType struct {
