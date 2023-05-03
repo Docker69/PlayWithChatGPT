@@ -11,7 +11,7 @@ import (
 	"github.com/sashabaranov/go-openai"
 )
 
-func handlePing(c echo.Context) error {
+func HandlePing(c echo.Context) error {
 
 	// log a message using logrus logger
 	utils.Logger.Info("Received request")

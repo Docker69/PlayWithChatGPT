@@ -91,7 +91,7 @@ func RunServer() {
 	})
 
 	// Example API endpoint
-	router.GET("/ping", handlePing)
+	router.GET("/ping", HandlePing)
 
 	// Init Chat API endpoint
 	router.POST("/api/v0/init/session", handleInitSession)

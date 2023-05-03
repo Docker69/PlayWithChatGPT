@@ -1,7 +1,8 @@
-package router
+package tests_test
 
 import (
 	//	"bytes"
+	"backend/router"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -14,18 +15,21 @@ import (
 )
 
 func TestHandlePing(t *testing.T) {
+	//router.RunServer()
+
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
-	err := handlePing(c)
+	err := router.HandlePing(c)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	var respMap map[string]string
 	err = json.Unmarshal(rec.Body.Bytes(), &respMap)
 	assert.NoError(t, err)
 	assert.Equal(t, "pong", respMap["message"])
+
 }
 
 /*

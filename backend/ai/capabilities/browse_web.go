@@ -186,9 +186,18 @@ func (c *BrowseWeb) scrape(url string) ([]string, error) {
 // scrapes the web site for links
 func (c *BrowseWeb) summarize(texts []string, quetion string, mem *memory.MemoryCache) (string, error) {
 
-	text := strings.Join(texts, " ")
-	text = strings.ReplaceAll(text, "\n", " ")
-	text = strings.ReplaceAll(text, "\t", " ")
+	text := ""
+
+	for _, line := range texts {
+		line = strings.ReplaceAll(line, "\n", " ")
+		line = strings.ReplaceAll(line, "\t", " ")
+		if strings.Count(line, " ") >= 3 {
+			text += line + " "
+		}
+	}
+	//text = strings.Join(filteredText, " ")
+	//text = strings.ReplaceAll(text, "\n", " ")
+	//text = strings.ReplaceAll(text, "\t", " ")
 
 	tokenizer, err := english.NewSentenceTokenizer(nil)
 	if err != nil {
