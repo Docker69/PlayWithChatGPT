@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/go-redis/redis/v8 v8.11.5
+	github.com/gocolly/colly/v2 v2.1.0
 	github.com/gomodule/redigo v1.8.9
 	github.com/google/uuid v1.3.0
 	github.com/joho/godotenv v1.5.1
@@ -27,7 +28,6 @@ require (
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dlclark/regexp2 v1.8.1 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
-	github.com/gocolly/colly/v2 v2.1.0 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
 	github.com/golang/protobuf v1.4.2 // indirect
@@ -61,6 +61,7 @@ require (
 require (
 	github.com/RediSearch/redisearch-go/v2 v2.1.1
 	github.com/labstack/echo/v4 v4.10.2
+	github.com/neurosnap/sentences v1.1.2
 	github.com/peteole/testdata-loader v0.3.0
 	github.com/pkoukk/tiktoken-go v0.1.1
 	github.com/rocketlaunchr/google-search v1.1.5

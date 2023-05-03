@@ -20,7 +20,7 @@ type RedisMem struct {
 	redispool    *redis.Pool
 }
 
-var memoryindex string = "auto-gpt"
+var memoryindex string = "play-gpt"
 
 //var vecnum int = 0
 
@@ -59,7 +59,7 @@ func NewRedisMem() (*RedisMem, error) {
 	memoryindex, exists = os.LookupEnv("MEMORY_INDEX")
 	if !exists {
 		utils.Logger.Info("MEMORY_INDEX not defined in env, defaulting to auto-gpt")
-		memoryindex = "auto-gpt"
+		memoryindex = "play-gpt"
 	}
 
 	//create redis connection pool

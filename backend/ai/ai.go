@@ -2,6 +2,7 @@ package ai
 
 // import gin framework
 import (
+	"backend/ai/memory"
 	"backend/models"
 	"backend/utils"
 	"os"
@@ -15,6 +16,7 @@ var MAX_TOKENS int = 4000
 var currentConfig models.OpenAIConfig = models.OpenAIConfig{}
 var apiKey string = ""
 var client *openai.Client = nil
+var Mem memory.MemoryCache = nil
 
 // init the chat package
 func init() {
@@ -59,4 +61,37 @@ func init() {
 	}
 
 	utils.Logger.Info("Chat Package Initialized")
+}
+
+// init function of the memory storage
+func InitMemory() error {
+	// get memory type from env
+	memType, exists := os.LookupEnv("MEMORY_STORAGE")
+	if !exists {
+		utils.Logger.Info("MEMORY_STORAGE is not defined in env, setting to \"local\"")
+		memType = "local"
+	}
+
+	if memType == "redis" {
+		redisMem, err := memory.NewRedisMem()
+		if err != nil {
+			utils.Logger.Errorf("NewRedisMem error: %v\n", err)
+			return err
+		}
+		Mem = redisMem
+		utils.Logger.Info("Memory storage is Redis")
+	} else {
+		//TODO: add support for local memory type
+		utils.Logger.Panic("NewLocalStorageMem panic: NOT READY!!!!!\n")
+		localMem, err := memory.NewLocalStorageMem(".")
+		if err != nil {
+			utils.Logger.Panicf("NewLocalStorageMem panic: %v\n", err)
+			return err
+		}
+		Mem = localMem
+		utils.Logger.Info("Memory storage is Local")
+	}
+
+	memory.Init(client)
+	return nil
 }

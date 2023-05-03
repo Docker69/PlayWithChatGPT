@@ -1,9 +1,8 @@
 package capabilities
 
 import (
+	"backend/ai/memory"
 	"fmt"
-
-	"backend/utils"
 
 	"github.com/tebeka/selenium"
 )
@@ -23,12 +22,15 @@ type SeleniumWebDriver struct {
 func NewSeleniumWebDriver(url string) (*SeleniumWebDriver, error) {
 	capability := &SeleniumWebDriver{
 		name:        "selenium-webdriver",
-		description: "A capability that provides access to Selenium WebDriver.",
+		description: "A capability that scrapes and memorize the web site text.",
 		version:     "1.0",
 	}
 
+	driverCapabilities := selenium.Capabilities{
+		"browserName": "chrome",
+	}
 	// Start a Selenium WebDriver session
-	driver, err := selenium.NewRemote(selenium.Capabilities{}, url)
+	driver, err := selenium.NewRemote(driverCapabilities, url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to start a new Selenium WebDriver session: %v", err)
 	}
@@ -52,38 +54,49 @@ func (c *SeleniumWebDriver) Version() string {
 	return c.version
 }
 
-// Get returns the state of the capability.
-func (c *SeleniumWebDriver) Get() interface{} {
-	return c.driver
-}
-
-// Set sets the state of the capability.
-func (c *SeleniumWebDriver) Set(value interface{}) error {
-	var ok bool
-	c.driver, ok = value.(selenium.WebDriver)
-	if !ok {
-		return fmt.Errorf("invalid type for Selenium WebDriver capability: expected selenium.WebDriver, but got %T", value)
-	}
-	return nil
-}
-
 // Run runs the capability.
-func (c *SeleniumWebDriver) Run() error {
-	// Navigate to Google using the WebDriver instance
-	err := c.driver.Get("https://www.google.com")
-	if err != nil {
-		return fmt.Errorf("failed to navigate to google.com using the Selenium WebDriver: %v", err)
+func (c *SeleniumWebDriver) Run(mem *memory.MemoryCache, args ...interface{}) (interface{}, error) {
+	var ok bool
+
+	//minimum 2 args
+	if len(args) < 2 {
+		return nil, fmt.Errorf("SeleniumWebDriver: at least one argument is required")
 	}
 
-	// Print the page title
-	title, err := c.driver.Title()
-	if err != nil {
-		return fmt.Errorf("failed to get the page title using the Selenium WebDriver: %v", err)
+	url, ok := args[0].(string)
+	if !ok {
+		return nil, fmt.Errorf("SeleniumWebDriver: url must be a string")
+	}
+	if url == "" {
+		return nil, fmt.Errorf("SeleniumWebDriver: input is empty")
 	}
 
-	utils.Logger.Debugf("Page title: %s\n", title)
+	quetion, ok := args[0].(string)
+	if !ok {
+		return nil, fmt.Errorf("SeleniumWebDriver: quetion must be a string")
+	}
+	if quetion == "" {
+		return nil, fmt.Errorf("SeleniumWebDriver: quetion is empty")
+	}
 
-	return nil
+	//scrape the web site
+	text, err := c.scrape(url)
+	if err != nil {
+		return nil, fmt.Errorf("SeleniumWebDriver, error scraping the web site: %v", err)
+	}
+
+	//scrape the web site
+	links, err := c.links(url)
+	if err != nil {
+		return nil, fmt.Errorf("SeleniumWebDriver, error getting links from the web site: %v", err)
+	}
+
+	resultJson := map[string]interface{}{
+		"summary": text,
+		"links":   links,
+	}
+
+	return resultJson, nil
 }
 
 // Stop stops the capability.
@@ -94,4 +107,16 @@ func (c *SeleniumWebDriver) Stop() error {
 		return fmt.Errorf("failed to quit the Selenium WebDriver session: %v", err)
 	}
 	return nil
+}
+
+// scrapes the web site and memorizes the text into the memory
+func (c *SeleniumWebDriver) scrape(url string) (string, error) {
+
+	return "", nil
+}
+
+// scrapes the web site and memorizes the text into the memory
+func (c *SeleniumWebDriver) links(url string) (string, error) {
+
+	return "", nil
 }

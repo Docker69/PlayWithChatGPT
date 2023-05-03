@@ -1,5 +1,13 @@
 package capabilities
 
+import (
+	"backend/ai/memory"
+	"backend/models"
+	"backend/utils"
+	"encoding/json"
+	"fmt"
+)
+
 // Capable defines the interface that each capability must implement.
 type Capable interface {
 	// Name returns the name of the capability.
@@ -8,14 +16,15 @@ type Capable interface {
 	Description() string
 	// Version returns the version number of the capability.
 	Version() string
-	// Get returns the state of the capability.
-	Get() interface{}
-	// Set sets the state of the capability.
-	Set(interface{}) error
 	// Run runs the capability.
-	Run() error
+	Run(mem *memory.MemoryCache, args ...interface{}) (interface{}, error)
 	// Stop stops the capability.
 	Stop() error
+}
+
+type CommandStruct struct {
+	Name string
+	Args interface{}
 }
 
 // CapabilityFactory stores and manages all the registered capabilities.
@@ -40,6 +49,7 @@ func (f *CapabilityFactory) List() []Capable {
 
 // Get returns a capability with the given name.
 func (f *CapabilityFactory) Get(name string) Capable {
+	//check if capability exists
 	return f.capabilitiesMap[name]
 }
 
@@ -48,6 +58,34 @@ func (f *CapabilityFactory) Remove(name string) error {
 	delete(f.capabilitiesMap, name)
 	return nil
 }
+
+// Execute executes a command from the factory, and returns the results as JSON
+func (f *CapabilityFactory) Execute(Command models.CommandType, mem *memory.MemoryCache) (string, error) {
+
+	// Get the capability.
+	capability := f.Get(Command.Name)
+
+	// Check if capability is nil.
+	if capability == nil {
+		return "", fmt.Errorf("capability not found: %s", Command.Name)
+	}
+
+	// Run the capability and get results.
+	results, err := capability.Run(mem, Command.Args.Input)
+	if err != nil {
+		return "", err
+	}
+
+	// Build json response.
+	jsonResponse, err := json.Marshal(results)
+	if err != nil {
+		return "", err
+	}
+
+	return capability.Description() + " " + string(jsonResponse), nil
+}
+
+// run capability from CapabilityFactory based on command input and arguments (interface) passed in
 
 // GetCapabilityFactory returns a pointer to a new instance of the CapabilityFactory type.
 func GetCapabilityFactory() *CapabilityFactory {
@@ -64,5 +102,13 @@ func init() {
 	//Add the google search capability
 	capabilityFactory.Add(&GoogleSearch{})
 	//Add the selenium web driver capability
-	capabilityFactory.Add(&SeleniumWebDriver{})
+	//capabilityFactory.Add(&SeleniumWebDriver{})
+	//Add the web browse
+	browseWeb, err := NewBrowseWeb()
+	if err != nil {
+		// handle error
+		utils.Logger.Errorf("CapabilityFactory: error creating browes web capability %v", err)
+	}
+	capabilityFactory.Add(browseWeb)
+
 }
