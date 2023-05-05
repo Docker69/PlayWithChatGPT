@@ -1,3 +1,4 @@
 {
-    "go.testTimeout": "300s"
+    "go.testTimeout": "300s",
+    "interactiveEditor.editMode" :"preview"
 }

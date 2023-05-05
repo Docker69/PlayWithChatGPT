@@ -5,6 +5,9 @@ type ArgsType struct {
 	Question string `json:"question"`
 	Input    string `json:"input"`
 	Reason   string `json:"reason"`
+	File     string `json:"file"`
+	Text     string `json:"text"`
+	Path     string `json:"path"`
 }
 type CommandType struct {
 	Name string   `json:"name"`

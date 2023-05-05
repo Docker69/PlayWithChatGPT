@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/gocolly/colly/v2"
+	"github.com/gocolly/colly/v2/extensions"
 	"github.com/joho/godotenv"
 	"github.com/neurosnap/sentences/english"
 	"github.com/sashabaranov/go-openai"
@@ -150,6 +151,9 @@ func (c *BrowseWeb) scrape(url string) ([]string, []string, error) {
 	text := []string{}
 	links := []string{}
 	coll := colly.NewCollector()
+	//use random user agent
+	extensions.RandomUserAgent(coll)
+
 	if coll == nil {
 		return []string{}, []string{}, fmt.Errorf("BrowseWeb: collector is nil")
 	}

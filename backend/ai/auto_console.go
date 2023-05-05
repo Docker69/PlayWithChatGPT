@@ -30,7 +30,7 @@ func constructTemplate(autoAI *models.AutoAI) (string, error) {
 	//get the template from the collection
 	template, err := mongodb.TemplatesCollection.GetByName("CONTEXT_DEFAULT")
 	if err != nil {
-		utils.Logger.Errorf("GetTemplateByName error: %v\n", err)
+		utils.Logger.Errorf("GetTemplateByName error: %v", err)
 		return "", err
 	}
 
@@ -57,7 +57,7 @@ func constructTemplate(autoAI *models.AutoAI) (string, error) {
 		//get the template corresponding to the string
 		template, err := mongodb.TemplatesCollection.GetByName(template_name)
 		if err != nil {
-			utils.Logger.Errorf("GetTemplateByName error: %v\n", err)
+			utils.Logger.Errorf("GetTemplateByName error: %v", err)
 			return "", err
 		}
 		//replace the string with the template content
@@ -68,7 +68,7 @@ func constructTemplate(autoAI *models.AutoAI) (string, error) {
 }
 
 // construct the context for ChatGPT from templates collection
-func constructContext(autoAI *models.AutoAI, chatContext *string, fullHistory *models.ChatCompletionRequestBody, mem *memory.MemoryCache) ([]openai.ChatCompletionMessage, error) {
+func constructContext(autoAI *models.AutoAI, chatContext *string, fullHistory *models.ChatCompletionRequestBody, mem *memory.MemoryCache, memoryToAdded string) ([]openai.ChatCompletionMessage, error) {
 
 	// Initialize as an empty slice
 	messages := make([]openai.ChatCompletionMessage, 0)
@@ -84,56 +84,87 @@ func constructContext(autoAI *models.AutoAI, chatContext *string, fullHistory *m
 		Role:    openai.ChatMessageRoleSystem,
 		Content: fmt.Sprintf("The current time and date is %s", time.Now().Format(time.UnixDate)),
 	})
+	/*
+		//get last assitant message from full history, iterate from last to first
+		var lastAssistantMessage string = ""
 
-	//loop over all fullHistory and find the assistant messages
-	var searchEmbedding string = ""
-	re := regexp.MustCompile(`,\s*|\s+`)
-	resultMap := make(map[string]bool)
-
-	for _, msg := range fullHistory.Messages {
-		if msg.Role == openai.ChatMessageRoleAssistant {
-			responseData, err := unMarshalMsgContent(&msg.Content, fullHistory)
-			if err != nil {
-				continue
+		for i := len(fullHistory.Messages) - 1; i >= 0; i-- {
+			if fullHistory.Messages[i].Role == openai.ChatMessageRoleAssistant {
+				lastAssistantMessage = fullHistory.Messages[i].Content
+				break
 			}
+		}
+	*/
+	/*
+		//loop over all fullHistory and find the assistant messages
+		var searchEmbedding string = ""
 
-			//searchEmbedding += responseData.Memorize.Subject + " " + responseData.Memorize.Information + " "
+			re := regexp.MustCompile(`,\s*|\s+`)
+			resultMap := make(map[string]bool)
 
-			//tokenize key words, insert into map and don't repeat same key word
-			for _, s := range re.Split(responseData.Thoughts.Keywords, -1) {
-				if !resultMap[s] && s != "" {
-					resultMap[s] = true
-					searchEmbedding += s + " "
+			for _, msg := range fullHistory.Messages {
+				if msg.Role == openai.ChatMessageRoleAssistant {
+					responseData, err := unMarshalMsgContent(&msg.Content, fullHistory)
+					if err != nil {
+						continue
+					}
+
+					//searchEmbedding += responseData.Memorize.Subject + " " + responseData.Memorize.Information + " "
+
+					//tokenize key words, insert into map and don't repeat same key word
+					for _, s := range re.Split(responseData.Thoughts.Keywords, -1) {
+						if !resultMap[s] && s != "" {
+							resultMap[s] = true
+							searchEmbedding += s + " "
+						}
+					}
+				}
+			}
+	*/
+
+	//current token count
+	tokenCount := helpers.NumTokensFromMessages(messages, currentConfig.Model)
+	//current memory token count
+	memoriesTokenCount := 0
+	//current memory string
+	memoriesStr := ""
+	memoriesToAdd := openai.ChatCompletionMessage{}
+
+	//join the string array to a single string and search the memory
+	past := (*mem).GetRelevantMemories(memoryToAdded, MEMORY_DEPTH)
+
+	//iterate on past memories and add them to the context
+	for _, m := range past {
+
+		memoriesStr += m + "\n"
+		memoriesToAdd = openai.ChatCompletionMessage{
+			Role:    openai.ChatMessageRoleSystem,
+			Content: fmt.Sprintf("This reminds you of these events from your past: %s", memoriesStr),
+		}
+
+		//get token count of memory to add
+		memoriesTokenCount = helpers.NumTokensFromMessages([]openai.ChatCompletionMessage{memoriesToAdd}, currentConfig.Model)
+
+		//break if going over 3000 tokens over all
+		if (tokenCount + memoriesTokenCount) > 2700 {
+			break
+		}
+	}
+
+	if len(past) > 0 && len(memoriesStr) > 0 {
+		//add the memories to the context
+		messages = append(messages, memoriesToAdd)
+	}
+	/*
+		//iterate over fullHistory and add system messages except the first two
+		if len(fullHistory.Messages) > 2 {
+			for _, msg := range fullHistory.Messages[2:] {
+				if msg.Role == openai.ChatMessageRoleSystem || msg.Role == openai.ChatMessageRoleUser {
+					messages = append(messages, msg)
 				}
 			}
 		}
-	}
-
-	//join the string array to a single string and search the memory
-	past := (*mem).GetRelevantMemories(searchEmbedding, MEMORY_DEPTH)
-
-	// define empty array of past ChatCompletionMessage to append
-	var pastMessagesToAppend []openai.ChatCompletionMessage = []openai.ChatCompletionMessage{}
-
-	//loop over relevant past and add them to the context as assistant messages
-	for _, p := range past {
-		pastMessageToAppend := openai.ChatCompletionMessage{
-			Role:    openai.ChatMessageRoleAssistant,
-			Content: p,
-		}
-		pastMessagesToAppend = append(pastMessagesToAppend, pastMessageToAppend)
-	}
-
-	//finally add the past message to the context
-	messages = append(messages, pastMessagesToAppend...)
-
-	//iterate over fullHistory and add system messages except the first two
-	for idx, msg := range fullHistory.Messages {
-		if idx > 1 && msg.Role == openai.ChatMessageRoleSystem {
-			messages = append(messages, msg)
-		}
-	}
-
+	*/
 	return messages, nil
 }
 
@@ -221,14 +252,14 @@ func initChats(autoAI *models.AutoAI, human *models.Human, chatFullHistory *mode
 		var err error = nil
 		*chatFullHistory, err = mongodb.ChatsCollection.GetById(autoAI.ChatId)
 		if err != nil {
-			utils.Logger.Errorf("GetChatById error: %v\n", err)
+			utils.Logger.Errorf("GetChatById error: %v", err)
 			return err
 		}
 
 		if len(chatFullHistory.Messages) == 0 {
-			chatFullHistory.Messages, err = constructContext(autoAI, chatContext, chatFullHistory, mem)
+			chatFullHistory.Messages, err = constructContext(autoAI, chatContext, chatFullHistory, mem, "")
 			if err != nil {
-				utils.Logger.Errorf("full chat history init error: %v\n", err)
+				utils.Logger.Errorf("full chat history init error: %v", err)
 				return err
 			}
 		}
@@ -238,7 +269,7 @@ func initChats(autoAI *models.AutoAI, human *models.Human, chatFullHistory *mode
 		//pass the chat as pointer to the function
 		_id, err := mongodb.ChatsCollection.Insert(chatFullHistory)
 		if err != nil {
-			utils.Logger.Errorf("InitNewChatDocument error: %v\n", err)
+			utils.Logger.Errorf("InitNewChatDocument error: %v", err)
 			return err
 		}
 
@@ -250,7 +281,7 @@ func initChats(autoAI *models.AutoAI, human *models.Human, chatFullHistory *mode
 		human.ChatIds = append(human.ChatIds, chatRecord)
 		err = mongodb.HumansCollection.UpdateChats(human)
 		if err != nil {
-			utils.Logger.Errorf("UpdateHumanChats error: %v\n", err)
+			utils.Logger.Errorf("UpdateHumanChats error: %v", err)
 			return err
 		}
 
@@ -259,14 +290,14 @@ func initChats(autoAI *models.AutoAI, human *models.Human, chatFullHistory *mode
 		err = mongodb.AutoAIsCollection.Update(autoAI)
 
 		if err != nil {
-			utils.Logger.Errorf("UpdateAutoAIChatId error: %v\n", err)
+			utils.Logger.Errorf("UpdateAutoAIChatId error: %v", err)
 			return err
 		}
 
 		// Init full chat history
-		chatFullHistory.Messages, err = constructContext(autoAI, chatContext, chatFullHistory, mem)
+		chatFullHistory.Messages, err = constructContext(autoAI, chatContext, chatFullHistory, mem, "")
 		if err != nil {
-			utils.Logger.Errorf("full chat history init error: %v\n", err)
+			utils.Logger.Errorf("full chat history init error: %v", err)
 			return err
 		}
 
@@ -280,43 +311,64 @@ func unMarshalMsgContent(msgContent *string, chatFullHistory *models.ChatComplet
 	var responseData models.Response = models.Response{}
 	var jsonValid bool = true
 	var err error = nil
-	if !json.Valid([]byte(*msgContent)) {
 
-		//unescape JSON
+	jsonStr := *msgContent
+
+	if !json.Valid([]byte(jsonStr)) {
 
 		// Handle invalid JSON error
-		utils.Logger.WithField("UUID", chatFullHistory.Id).Errorf("Invalid JSON response: %v\n", err)
+		utils.Logger.WithField("UUID", chatFullHistory.Id).Errorf("Invalid JSON response")
 
 		//jsonStr, _ := json.Marshal(chat.Messages)
 		utils.Logger.WithField("UUID", chatFullHistory.Id).Debugf("content dump: %s", *msgContent)
 
-		*msgContent, err = utils.FixJSON(*msgContent)
-		if err != nil {
-			utils.Logger.WithField("UUID", chatFullHistory.Id).Errorf("FixJSON error: %v\n", err)
-			jsonValid = false
+		//find first "{" and truncate everything up to it
+		index := strings.Index(jsonStr, "{") // find index of first "{"
+		if index != -1 {                     // check if "{" was found
+			jsonStr = (jsonStr)[index:] // truncate everything before "{"
 		}
 		//check if valid after the fix
-		if !json.Valid([]byte(*msgContent)) {
-			utils.Logger.WithField("UUID", chatFullHistory.Id).Errorf("Invalid JSON response after fix: %v\n", err)
-			jsonValid = false
+		if !json.Valid([]byte(jsonStr)) {
+			utils.Logger.WithField("UUID", chatFullHistory.Id).Errorf("Invalid JSON response after fix, trying second fix")
+			//find last "}" and truncate everything after it
+			index = strings.LastIndex(jsonStr, "}") // find index of last "}"
+			if index != -1 {                        // check if "}" was found
+				jsonStr = (jsonStr)[:index+1] // truncate everything after "}"
+			}
+			//check if valid after the fix
+			if !json.Valid([]byte(jsonStr)) {
+				utils.Logger.WithField("UUID", chatFullHistory.Id).Errorf("invalid JSON response after fix, trying third fix: %v", err)
+
+				jsonStr, err = utils.FixJSON(jsonStr)
+				if err != nil {
+					utils.Logger.WithField("UUID", chatFullHistory.Id).Errorf("FixJSON error: %v", err)
+					return responseData, fmt.Errorf("FixJSON error: %v", err)
+				}
+				//check if valid after the fix
+				if !json.Valid([]byte(jsonStr)) {
+					utils.Logger.WithField("UUID", chatFullHistory.Id).Errorf("invalid JSON response after fix", err)
+					jsonValid = false
+					return responseData, fmt.Errorf("invalid JSON response after fix")
+				}
+			}
 		}
 	}
 
 	if jsonValid {
 		//convert string to byte array
-		contentByte := []byte(*msgContent)
+		contentByte := []byte(jsonStr)
 		//unmarshal the byte array to struct
 		err = json.Unmarshal(contentByte, &responseData)
 		if err != nil {
 			utils.Logger.WithField("UUID", chatFullHistory.Id).Errorf("==========================================================================================\n"+
-				"Error unmarsheling response: %v\n,"+
+				"Error unmarsheling response: %v,"+
 				"Content Dump: %s\n"+
 				"==========================================================================================\n", err, msgContent)
 			//try to unmarshel then to a map
 			var dataMap map[string]interface{}
 			if err = json.Unmarshal(contentByte, &dataMap); err != nil {
 				// Handle any errors that may occur during parsing
-				utils.Logger.WithField("UUID", chatFullHistory.Id).Errorf("Error unmarsheling to a map: %v\n", err)
+				utils.Logger.WithField("UUID", chatFullHistory.Id).Errorf("Error unmarsheling to a map: %v", err)
 				return models.Response{}, err
 			}
 
@@ -328,6 +380,8 @@ func unMarshalMsgContent(msgContent *string, chatFullHistory *models.ChatComplet
 
 			return models.Response{}, err
 		}
+		//just in case the conent was fixed
+		*msgContent = jsonStr
 	}
 	return responseData, nil
 }
@@ -343,7 +397,9 @@ func outputResponse(responseData models.Response) {
 	if responseData.Thoughts.Speak != "" {
 		fmt.Printf("- Speak: %v\n", responseData.Thoughts.Speak)
 	}
-	fmt.Printf("- Keywords: %v\n", responseData.Thoughts.Keywords)
+	if responseData.Thoughts.Keywords != "" {
+		fmt.Printf("- Keywords: %v\n", responseData.Thoughts.Keywords)
+	}
 
 	// Output the command
 	fmt.Println("Command:")
@@ -361,10 +417,16 @@ func outputResponse(responseData models.Response) {
 	if responseData.Command.Args.Reason != "" {
 		fmt.Printf("  - Reason: %v\n", responseData.Command.Args.Reason)
 	}
+	if responseData.Command.Args.File != "" {
+		fmt.Printf("  - File: %v\n", responseData.Command.Args.File)
+	}
+	if responseData.Command.Args.Text != "" {
+		fmt.Printf("  - Text: %v\n", responseData.Command.Args.Text)
+	}
 	// Output what to memorize
-	fmt.Println("Memorize:")
-	fmt.Printf("- Subject: %v\n", responseData.Memorize.Subject)
-	fmt.Printf("- Information: %v\n", responseData.Memorize.Information)
+	//fmt.Println("Memorize:")
+	//fmt.Printf("- Subject: %v", responseData.Memorize.Subject)
+	//fmt.Printf("- Information: %v", responseData.Memorize.Information)
 	fmt.Println("==========================================================================================")
 }
 
@@ -374,7 +436,7 @@ func StartConsoleAuto() {
 	// call initMemory function to get memory storage
 	err := InitMemory()
 	if err != nil {
-		utils.Logger.Errorf("initMemory error: %v\n", err)
+		utils.Logger.Errorf("initMemory error: %v", err)
 		return
 	}
 
@@ -394,36 +456,38 @@ func StartConsoleAuto() {
 	text = strings.Replace(text, "\n", "", -1)
 	human, err := mongodb.HumansCollection.GetByNickname(text)
 	if err != nil {
-		utils.Logger.Panicf("GetHumanByNickname panic: %v\n", err)
+		utils.Logger.Panicf("GetHumanByNickname panic: %v", err)
 	}
 
 	var autoAI models.AutoAI
 	//init AutoAI
 	autoAI, err = initAutoAI(reader, &human, &Mem)
 	if err != nil {
-		utils.Logger.Errorf("InitAutoAI error: %v\n", err)
+		utils.Logger.Errorf("InitAutoAI error: %v", err)
 		return
 	}
 
 	//construct the template for the system context
 	chatContext, err := constructTemplate(&autoAI)
 	if err != nil {
-		utils.Logger.Errorf("ConstructTemplate error: %v\n", err)
+		utils.Logger.Errorf("ConstructTemplate error: %v", err)
 		return
 	}
 
 	// get user directive from templates  collection
 	userDirective, err := mongodb.TemplatesCollection.GetByName("USER_DIRECTIVE")
 	if err != nil {
-		utils.Logger.Errorf("GetTemplateByName error: %v\n", err)
+		utils.Logger.Errorf("GetTemplateByName error: %v", err)
 	}
 
 	//init Chats
 	err = initChats(&autoAI, &human, chatFullHistory, &chatContext, &Mem)
 	if err != nil {
-		utils.Logger.Errorf("InitChats error: %v\n", err)
+		utils.Logger.Errorf("InitChats error: %v", err)
 		return
 	}
+
+	memoryToAdd := ""
 
 	fmt.Println("Conversation")
 	fmt.Println("---------------------")
@@ -438,9 +502,9 @@ func StartConsoleAuto() {
 		go utils.Spinner(done)
 
 		// construct the context for ChatGPT
-		messagesToSend, err := constructContext(&autoAI, &chatContext, chatFullHistory, &Mem)
+		messagesToSend, err := constructContext(&autoAI, &chatContext, chatFullHistory, &Mem, memoryToAdd)
 		if err != nil {
-			utils.Logger.Errorf("ConstructContext error: %v\n", err)
+			utils.Logger.Errorf("ConstructContext error: %v", err)
 			return
 		}
 
@@ -478,7 +542,7 @@ func StartConsoleAuto() {
 		done <- true // Signal the spinner to stop spinning since the operation is done
 
 		if err != nil {
-			utils.Logger.WithField("UUID", chatFullHistory.Id).Errorf("ChatCompletion error: %v\n", err)
+			utils.Logger.WithField("UUID", chatFullHistory.Id).Errorf("ChatCompletion error: %v", err)
 			continue
 		}
 
@@ -489,27 +553,28 @@ func StartConsoleAuto() {
 		// get the generated response from OpenAI API
 		content := assistant_response.Choices[0].Message.Content
 
+		//parse the response to get the command
 		responseData, err := unMarshalMsgContent(&content, chatFullHistory)
 		if err != nil {
+			//if parse unsuccessful try again without taking into account current response
+			content = ""
 			continue
 		}
 
-		//only if content isn't empty
-		if content != "" {
-			//add the response to the memory
-			err = Mem.AddMemory(content)
-			if err != nil {
-				utils.Logger.WithField("UUID", chatFullHistory.Id).Errorf("AddMemory error: %v\n", err)
-			}
-
-			// add the response to the list of messages
-			chatFullHistory.Messages = append(chatFullHistory.Messages, openai.ChatCompletionMessage{
-				Role:    openai.ChatMessageRoleAssistant,
-				Content: content,
-			})
-		}
 		//output the response in human readible format
 		outputResponse(responseData)
+
+		if responseData.Command.Name == "task_complete" {
+			// check if quit command entered, if so exit the loop
+			fmt.Println("Goodbye !!")
+
+			//Update the chat document in the database befoew exiting
+			err = mongodb.ChatsCollection.Update(chatFullHistory)
+			if err != nil {
+				utils.Logger.WithField("UUID", chatFullHistory.Id).Errorf("on exit UpdateChat error: %v", err)
+			}
+			break
+		}
 
 		// read input from console
 		fmt.Println("Enter 'y' to authorise command, '!quit' to exit program, or enter feedback for ...")
@@ -522,6 +587,7 @@ func StartConsoleAuto() {
 		//check if user authorised the command, equals exactly to 'y'
 		isY := strings.ToLower(strings.TrimSpace(input))
 
+		userInput := "GENERATE NEXT COMMAND JSON"
 		if strings.Contains(input, quitStr) {
 			// check if quit command entered, if so exit the loop
 			fmt.Println("Goodbye !!")
@@ -529,39 +595,61 @@ func StartConsoleAuto() {
 			//Update the chat document in the database befoew exiting
 			err = mongodb.ChatsCollection.Update(chatFullHistory)
 			if err != nil {
-				utils.Logger.WithField("UUID", chatFullHistory.Id).Errorf("on exit UpdateChat error: %v\n", err)
+				utils.Logger.WithField("UUID", chatFullHistory.Id).Errorf("on exit UpdateChat error: %v", err)
 			}
 			break
 		} else if isY != "y" {
+			userInput = input
 			//add user input
 			chatFullHistory.Messages = append(chatFullHistory.Messages, openai.ChatCompletionMessage{
 				Role:    openai.ChatMessageRoleSystem,
 				Content: "Human feedback: " + input,
 			})
 			if err != nil {
-				utils.Logger.Errorf("Adding user input error: %v\n", err)
+				utils.Logger.Errorf("Adding user input error: %v", err)
 			}
 		}
 
+		//TODO: get it from environment variables
+		responseData.Command.Args.Path = "/home/bennyk/projects/PlayWithChatGPT/backend/ai_workspace"
 		// execute any command requested by the AI
 		resultStr, err := capabilities.GetCapabilityFactory().Execute(responseData.Command, &Mem)
 		if err != nil {
-			utils.Logger.Errorf("Execute command error: %v\n", err)
+			utils.Logger.Errorf("Execute command error: %v", err)
 		} else if resultStr != "" {
 			//add user input
 			chatFullHistory.Messages = append(chatFullHistory.Messages, openai.ChatCompletionMessage{
-				Role:    openai.ChatMessageRoleSystem,
+				Role:    openai.ChatMessageRoleUser,
 				Content: resultStr,
 			})
 			if err != nil {
-				utils.Logger.Errorf("Adding command result error: %v\n", err)
+				utils.Logger.Errorf("Adding command result error: %v", err)
 			}
+		}
+
+		//only if content isn't empty
+		if content != "" {
+			memoryToAdd = fmt.Sprintf("%s\nResult: %s\nHuman Feedback: %s", content, resultStr, userInput)
+			//add the response to the memory
+			err = Mem.AddMemory(memoryToAdd)
+			if err != nil {
+				utils.Logger.WithField("UUID", chatFullHistory.Id).Errorf("AddMemory error: %v", err)
+			}
+
+			// add the response to the list of messages
+			chatFullHistory.Messages = append(chatFullHistory.Messages, openai.ChatCompletionMessage{
+				Role:    openai.ChatMessageRoleAssistant,
+				Content: content,
+			})
+
+			//try to send only few words to get the relevant memory for next response
+			memoryToAdd = "thoughts command " + responseData.Command.Name + " " + responseData.Thoughts.Keywords
 		}
 
 		//Update the chat document in the database
 		err = mongodb.ChatsCollection.Update(chatFullHistory)
 		if err != nil {
-			utils.Logger.WithField("UUID", chatFullHistory.Id).Errorf("UpdateChat error: %v\n", err)
+			utils.Logger.WithField("UUID", chatFullHistory.Id).Errorf("UpdateChat error: %v", err)
 			continue
 		}
 	}

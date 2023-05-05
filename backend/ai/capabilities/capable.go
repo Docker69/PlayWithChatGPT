@@ -64,8 +64,9 @@ func (f *CapabilityFactory) Execute(Command models.CommandType, mem *memory.Memo
 
 	//nothing to do
 	nothingToDo := map[string]bool{
-		"do_nothing": true,
-		"user_input": true,
+		"do_nothing":    true,
+		"user_input":    true,
+		"task_complete": true,
 	}
 	//check if Command is in nothing array
 	if nothingToDo[Command.Name] {
@@ -112,6 +113,11 @@ func init() {
 
 	//Add the google search capability
 	capabilityFactory.Add(&GoogleSearch{})
+	//Add the write to file capability
+	capabilityFactory.Add(&WriteToFile{})
+	//Add the read from file capability
+	capabilityFactory.Add(&ReadFile{})
+
 	//Add the selenium web driver capability
 	//capabilityFactory.Add(&SeleniumWebDriver{})
 	//Add the web browse

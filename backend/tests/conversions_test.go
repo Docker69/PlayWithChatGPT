@@ -13,7 +13,7 @@ import (
 
 func prepareData() ([]float32, []byte) {
 	// Read test data from file
-	byteData := testdataloader.GetTestFile("./tests/test_data.json")
+	byteData := testdataloader.GetTestFile("./tests/conversions_test_data.json")
 
 	// Check if byteData is empty
 	if len(byteData) == 0 {

@@ -1,2 +1,3 @@
 .env
 backend/tests/test-results-scrape.txt
+backend/ai_workspace/SciFi_recommendations.txt
